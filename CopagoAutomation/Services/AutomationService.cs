@@ -13,12 +13,16 @@ namespace CopagoAutomation.Services
 		private readonly CalibrationService _calibrationService;
 		private readonly AbcAutomation _abcAutomation;
 
-		public AutomationService(CalibrationService calibrationService)
+		private readonly PathResolver _pathResolver;
+
+		public AutomationService(CalibrationService calibrationService, PathResolver pathResolver)
 		{
 			_calibrationService = calibrationService
 				?? throw new ArgumentNullException(nameof(calibrationService));
+			_pathResolver = pathResolver
+				?? throw new ArgumentNullException(nameof(pathResolver));
 
-			_abcAutomation = new AbcAutomation();
+			_abcAutomation = new AbcAutomation(_pathResolver);
 		}
 
 		public List<string> StartAbcAutomation(AbcStartRequest request)

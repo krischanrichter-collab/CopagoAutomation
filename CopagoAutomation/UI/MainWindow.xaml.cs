@@ -105,7 +105,7 @@ namespace CopagoAutomation
 			{
 				_calibrationData = await _calibrationStorage.LoadAsync();
 				_calibrationService = new CalibrationService(_calibrationData);
-				_automationService = new AutomationService(_calibrationService);
+                    _automationService = new AutomationService(_calibrationService, new PathResolver(_settings));
 				_mainViewModel = new MainViewModel(_calibrationService);
 			}
 			catch (Exception ex)
@@ -717,8 +717,10 @@ namespace CopagoAutomation
 				BaseFolder = activePath,
 				UseSammelordner = _settings.SaveMode == SaveMode.Alternativ,
 				SelectedPosCount = selectedPosValues.Count,
-				SelectedPosValues = selectedPosValues
-			};
+                    SelectedPosValues = selectedPosValues,
+                    DateFrom = AbcDateRuleSelector.DateFrom,
+                    DateTo = AbcDateRuleSelector.DateTo
+                };
 
 			LogAbc($"Start ABC mit Speicher-Modus: {_settings.SaveMode}");
 			LogAbc($"Aktiver Zielpfad: {activePath}");

@@ -26,15 +26,18 @@ namespace CopagoAutomation.Automation
 
 		private readonly WindowAutomation _windowAutomation;
 
-		public AbcAutomation()
-			: this(new WindowAutomation())
-		{
-		}
+private readonly PathResolver _pathResolver;
 
-		public AbcAutomation(WindowAutomation windowAutomation)
-		{
-			_windowAutomation = windowAutomation ?? throw new ArgumentNullException(nameof(windowAutomation));
-		}
+			public AbcAutomation(PathResolver pathResolver)
+				: this(new WindowAutomation(), pathResolver)
+			{
+			}
+
+			public AbcAutomation(WindowAutomation windowAutomation, PathResolver pathResolver)
+			{
+				_windowAutomation = windowAutomation ?? throw new ArgumentNullException(nameof(windowAutomation));
+				_pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+			}
 
 		public List<string> Run(AbcStartRequest request)
 		{
