@@ -1,0 +1,800 @@
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Interop;
+using Microsoft.Win32;
+using CopagoAutomation.Calibration;
+using CopagoAutomation.Data;
+using CopagoAutomation.Models;
+using CopagoAutomation.Services;
+using CopagoAutomation.ViewModels;
+using CopagoAutomation.Windows;
+
+namespace CopagoAutomation
+{
+	public partial class MainWindow : Window
+	{
+		private readonly SettingsStore _store;
+		private readonly CalibrationStorage _calibrationStorage;
+
+		private AutomationService? _automationService;
+		private CalibrationData? _calibrationData;
+		private CalibrationService? _calibrationService;
+		private MainViewModel? _mainViewModel;
+		private AppSettings? _settings;
+
+		private HwndSource? _hwndSource;
+		private CalibrationPromptWindow? _activeCalibrationPrompt;
+
+		private const int WM_HOTKEY = 0x0312;
+		private const uint MOD_ALT = 0x0001;
+		private const uint MOD_CONTROL = 0x0002;
+
+		private const int HOTKEY_ID_DIGIT_0 = 1000;
+		private const int HOTKEY_ID_NUMPAD_0 = 2000;
+
+		private const uint GA_ROOT = 2;
+
+		[StructLayout(LayoutKind.Sequential)]
+		private struct POINT
+		{
+			public int X;
+			public int Y;
+		}
+
+		[DllImport("user32.dll")]
+		private static extern bool GetCursorPos(out POINT lpPoint);
+
+		[DllImport("user32.dll")]
+		private static extern IntPtr WindowFromPoint(POINT point);
+
+		[DllImport("user32.dll")]
+		private static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
+
+		[DllImport("user32.dll")]
+		private static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
+
+		[DllImport("user32.dll", SetLastError = true)]
+		private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+		[DllImport("user32.dll", SetLastError = true)]
+		private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+		public MainWindow()
+		{
+			InitializeComponent();
+
+			var path = Path.Combine(
+				Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+				"CopagoAutomation",
+				"settings.json");
+
+			_store = new SettingsStore(path);
+
+			var calibrationPath = Path.Combine(
+				Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+				"CopagoAutomation",
+				"calibration.json");
+
+			_calibrationStorage = new CalibrationStorage(calibrationPath);
+
+			AbcModeLaptop.Checked += AbcMode_Checked;
+			AbcModeDocking.Checked += AbcMode_Checked;
+
+			XModeLaptop.Checked += XMode_Checked;
+			XModeDocking.Checked += XMode_Checked;
+
+			// ABC Speicherfelder automatisch speichern, wenn der Nutzer manuell tippt
+			AbcBaseFolder.LostFocus += AbcStorageFields_LostFocus;
+			AbcSammelordner.LostFocus += AbcStorageFields_LostFocus;
+
+			LoadPosEntries();
+			LoadSettings();
+
+			Loaded += MainWindow_Loaded;
+			SourceInitialized += MainWindow_SourceInitialized;
+			Closed += MainWindow_Closed;
+		}
+
+		private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				_calibrationData = await _calibrationStorage.LoadAsync();
+				_calibrationService = new CalibrationService(_calibrationData);
+				_automationService = new AutomationService(_calibrationService);
+				_mainViewModel = new MainViewModel(_calibrationService);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(
+					$"Fehler beim Laden der Kalibrierungsdaten: {ex.Message}",
+					"Kalibrierung",
+					MessageBoxButton.OK,
+					MessageBoxImage.Error);
+			}
+		}
+
+		private void MainWindow_SourceInitialized(object? sender, EventArgs e)
+		{
+			_hwndSource = PresentationSource.FromVisual(this) as HwndSource;
+
+			if (_hwndSource == null)
+				return;
+
+			_hwndSource.AddHook(WndProc);
+			RegisterCalibrationHotkeys();
+		}
+
+		private void MainWindow_Closed(object? sender, EventArgs e)
+		{
+			UnregisterCalibrationHotkeys();
+
+			if (_hwndSource != null)
+			{
+				_hwndSource.RemoveHook(WndProc);
+				_hwndSource = null;
+			}
+		}
+
+		private async void LoadSettings()
+		{
+			try
+			{
+				_settings = await _store.LoadAsync();
+			}
+			catch
+			{
+				_settings = new AppSettings();
+			}
+
+			ApplyModesToUi();
+			ApplyStorageSettingsToUi();
+			UpdateAbcSaveModeUi();
+		}
+
+		private void LoadPosEntries()
+		{
+			var allPos = PosRepository.GetAll();
+
+			AbcPosList.Items.Clear();
+			XPosList.Items.Clear();
+
+			foreach (string pos in allPos)
+			{
+				AbcPosList.Items.Add(pos);
+				XPosList.Items.Add(pos);
+			}
+		}
+
+		private async Task SaveSettingsAsync()
+		{
+			if (_settings != null)
+				await _store.SaveAsync(_settings);
+		}
+
+		private async Task SaveCalibrationDataAsync()
+		{
+			if (_calibrationData != null)
+				await _calibrationStorage.SaveAsync(_calibrationData);
+		}
+
+		private static string GetCalibrationModeName(MachineMode mode)
+		{
+			return mode == MachineMode.Laptop ? "laptop" : "dock";
+		}
+
+		private bool TryGetCurrentClientCursorPosition(out int x, out int y)
+		{
+			x = 0;
+			y = 0;
+
+			if (!GetCursorPos(out POINT screenPoint))
+				return false;
+
+			IntPtr childWindow = WindowFromPoint(screenPoint);
+			if (childWindow == IntPtr.Zero)
+				return false;
+
+			IntPtr rootWindow = GetAncestor(childWindow, GA_ROOT);
+			if (rootWindow == IntPtr.Zero)
+				return false;
+
+			POINT clientPoint = screenPoint;
+
+			if (!ScreenToClient(rootWindow, ref clientPoint))
+				return false;
+
+			x = clientPoint.X;
+			y = clientPoint.Y;
+			return true;
+		}
+
+		private bool TryGetDigitFromHotkeyId(int hotkeyId, out int digit)
+		{
+			digit = -1;
+
+			if (hotkeyId >= HOTKEY_ID_DIGIT_0 && hotkeyId <= HOTKEY_ID_DIGIT_0 + 9)
+			{
+				digit = hotkeyId - HOTKEY_ID_DIGIT_0;
+				return true;
+			}
+
+			if (hotkeyId >= HOTKEY_ID_NUMPAD_0 && hotkeyId <= HOTKEY_ID_NUMPAD_0 + 9)
+			{
+				digit = hotkeyId - HOTKEY_ID_NUMPAD_0;
+				return true;
+			}
+
+			return false;
+		}
+
+		private void RegisterCalibrationHotkeys()
+		{
+			IntPtr handle = new WindowInteropHelper(this).Handle;
+			if (handle == IntPtr.Zero)
+				return;
+
+			for (int digit = 0; digit <= 9; digit++)
+			{
+				int normalId = HOTKEY_ID_DIGIT_0 + digit;
+				int numpadId = HOTKEY_ID_NUMPAD_0 + digit;
+
+				uint normalVk = (uint)(0x30 + digit);
+				uint numpadVk = (uint)(0x60 + digit);
+
+				RegisterHotKey(handle, normalId, MOD_CONTROL | MOD_ALT, normalVk);
+				RegisterHotKey(handle, numpadId, MOD_CONTROL | MOD_ALT, numpadVk);
+			}
+		}
+
+		private void UnregisterCalibrationHotkeys()
+		{
+			IntPtr handle = new WindowInteropHelper(this).Handle;
+			if (handle == IntPtr.Zero)
+				return;
+
+			for (int digit = 0; digit <= 9; digit++)
+			{
+				int normalId = HOTKEY_ID_DIGIT_0 + digit;
+				int numpadId = HOTKEY_ID_NUMPAD_0 + digit;
+
+				UnregisterHotKey(handle, normalId);
+				UnregisterHotKey(handle, numpadId);
+			}
+		}
+
+		private IntPtr WndProc(
+			IntPtr hwnd,
+			int msg,
+			IntPtr wParam,
+			IntPtr lParam,
+			ref bool handled)
+		{
+			if (msg == WM_HOTKEY)
+			{
+				int hotkeyId = wParam.ToInt32();
+				HandleCalibrationHotkey(hotkeyId);
+				handled = true;
+			}
+
+			return IntPtr.Zero;
+		}
+
+		private void HandleCalibrationHotkey(int hotkeyId)
+		{
+			if (_mainViewModel == null)
+				return;
+
+			if (!_mainViewModel.IsCalibrationRunning)
+				return;
+
+			if (_mainViewModel.CurrentCalibrationStep == null)
+				return;
+
+			if (_activeCalibrationPrompt == null)
+				return;
+
+			if (!TryGetDigitFromHotkeyId(hotkeyId, out int pressedDigit))
+				return;
+
+			int expectedDigit = (_mainViewModel.CalibrationRunner?.CurrentIndex ?? 0) + 1;
+
+			if (pressedDigit != expectedDigit)
+				return;
+
+			if (!TryGetCurrentClientCursorPosition(out int x, out int y))
+				return;
+
+			bool captured = _mainViewModel.SetLastCapturedPosition(x, y);
+			if (!captured)
+				return;
+
+			_activeCalibrationPrompt.SetCapturedPosition(x, y);
+		}
+
+		private void LogCurrentCalibrationStepToAbc()
+		{
+			if (_mainViewModel == null)
+			{
+				LogAbc("Kalibrierung nicht verfügbar.");
+				return;
+			}
+
+			if (_mainViewModel.IsCalibrationFinished)
+			{
+				LogAbc("Kalibrierung abgeschlossen.");
+				return;
+			}
+
+			if (_mainViewModel.CurrentCalibrationStep == null)
+			{
+				LogAbc("Kein aktueller Kalibrierschritt vorhanden.");
+				return;
+			}
+
+			LogAbc($"Schritt: {_mainViewModel.CurrentCalibrationTitle}");
+			LogAbc($"Hotkey: {_mainViewModel.CurrentCalibrationHotkeyText}");
+			LogAbc(_mainViewModel.CurrentCalibrationInstructionText);
+		}
+
+		private void LogCurrentCalibrationStepToX()
+		{
+			if (_mainViewModel == null)
+			{
+				LogX("Kalibrierung nicht verfügbar.");
+				return;
+			}
+
+			if (_mainViewModel.IsCalibrationFinished)
+			{
+				LogX("Kalibrierung abgeschlossen.");
+				return;
+			}
+
+			if (_mainViewModel.CurrentCalibrationStep == null)
+			{
+				LogX("Kein aktueller Kalibrierschritt vorhanden.");
+				return;
+			}
+
+			LogX($"Schritt: {_mainViewModel.CurrentCalibrationTitle}");
+			LogX($"Hotkey: {_mainViewModel.CurrentCalibrationHotkeyText}");
+			LogX(_mainViewModel.CurrentCalibrationInstructionText);
+		}
+
+		private string? BrowseForFolder(string currentPath)
+		{
+			var dialog = new OpenFolderDialog
+			{
+				Title = "Ordner auswählen"
+			};
+
+			if (!string.IsNullOrWhiteSpace(currentPath) && Directory.Exists(currentPath))
+			{
+				dialog.InitialDirectory = currentPath;
+			}
+
+			bool? result = dialog.ShowDialog();
+
+			if (result == true)
+			{
+				return dialog.FolderName;
+			}
+
+			return null;
+		}
+
+		private Task WaitForWindowCloseAsync(Window window)
+		{
+			var tcs = new TaskCompletionSource<bool>();
+
+			void ClosedHandler(object? sender, EventArgs e)
+			{
+				window.Closed -= ClosedHandler;
+				tcs.TrySetResult(true);
+			}
+
+			window.Closed += ClosedHandler;
+			return tcs.Task;
+		}
+
+		private async Task RunCalibrationWithPromptAsync(
+			string modeName,
+			string profileName,
+			string profileDisplayName,
+			Action<string> logAction)
+		{
+			if (_mainViewModel == null)
+			{
+				logAction("Kalibrierung konnte nicht gestartet werden.");
+				return;
+			}
+
+			try
+			{
+				this.Hide();
+
+				_mainViewModel.StartCalibration(modeName, profileName);
+
+				logAction($"Kalibrierung für {profileDisplayName} gestartet. Modus: {modeName}");
+
+				while (_mainViewModel.IsCalibrationRunning && _mainViewModel.CurrentCalibrationStep != null)
+				{
+					var currentStep = _mainViewModel.CurrentCalibrationStep;
+					if (currentStep == null)
+						break;
+
+					logAction($"Schritt: {_mainViewModel.CurrentCalibrationTitle}");
+					logAction($"Hotkey: {_mainViewModel.CurrentCalibrationHotkeyText}");
+					logAction(_mainViewModel.CurrentCalibrationInstructionText);
+
+					var promptWindow = new CalibrationPromptWindow
+					{
+						Owner = this,
+						Topmost = true
+					};
+
+					promptWindow.SetStep(
+						_mainViewModel.CurrentCalibrationTitle,
+						_mainViewModel.CurrentCalibrationHotkeyText,
+						_mainViewModel.CurrentCalibrationInstructionText);
+
+					_activeCalibrationPrompt = promptWindow;
+
+					Task waitForCloseTask = WaitForWindowCloseAsync(promptWindow);
+					promptWindow.Show();
+					await waitForCloseTask;
+
+					if (ReferenceEquals(_activeCalibrationPrompt, promptWindow))
+					{
+						_activeCalibrationPrompt = null;
+					}
+
+					if (promptWindow.WasCancelled || !promptWindow.WasConfirmed)
+					{
+						_mainViewModel.CancelCalibration();
+						logAction($"Kalibrierung für {profileDisplayName} abgebrochen.");
+						return;
+					}
+
+					if (!_mainViewModel.HasLastCapturedPosition)
+					{
+						_mainViewModel.CancelCalibration();
+						logAction("Kalibrierung abgebrochen: Es wurde keine Mausposition übernommen.");
+						return;
+					}
+
+					string stepTitle = currentStep.Title;
+					string stepKey = currentStep.Key;
+					int x = _mainViewModel.LastCapturedX;
+					int y = _mainViewModel.LastCapturedY;
+
+					bool saved = _mainViewModel.SaveCurrentCalibrationPoint();
+
+					if (!saved)
+					{
+						logAction("Kalibrierpunkt konnte nicht gespeichert werden.");
+						return;
+					}
+
+					logAction($"Gespeichert: {stepTitle} ({stepKey}) -> X={x}, Y={y}");
+				}
+
+				if (_mainViewModel.IsCalibrationFinished)
+				{
+					await SaveCalibrationDataAsync();
+					logAction($"{profileDisplayName} Kalibrierung vollständig abgeschlossen und gespeichert.");
+				}
+			}
+			finally
+			{
+				this.Show();
+				this.Activate();
+			}
+		}
+
+		private async void AbcMode_Checked(object sender, RoutedEventArgs e)
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			if (AbcModeLaptop.IsChecked == true)
+				_settings.AbcMode = MachineMode.Laptop;
+			else
+				_settings.AbcMode = MachineMode.Docking;
+
+			UpdateAbcIniText();
+			await SaveSettingsAsync();
+		}
+
+		private void UpdateAbcIniText()
+		{
+			string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+			if (_settings?.AbcMode == MachineMode.Laptop)
+			{
+				AbcActiveIniText.Text =
+					$@"Laptop | INI: {Path.Combine(baseDir, "calibration_laptop.ini")}";
+			}
+			else
+			{
+				AbcActiveIniText.Text =
+					$@"Docking | INI: {Path.Combine(baseDir, "calibration_docking.ini")}";
+			}
+		}
+
+		private async void XMode_Checked(object sender, RoutedEventArgs e)
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			if (XModeLaptop.IsChecked == true)
+				_settings.XMode = MachineMode.Laptop;
+			else
+				_settings.XMode = MachineMode.Docking;
+
+			UpdateXIniText();
+			await SaveSettingsAsync();
+		}
+
+		private void UpdateXIniText()
+		{
+			string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+			if (_settings?.XMode == MachineMode.Laptop)
+			{
+				XActiveIniText.Text =
+					$@"Laptop | INI: {Path.Combine(baseDir, "calibration_laptop.ini")}";
+			}
+			else
+			{
+				XActiveIniText.Text =
+					$@"Docking | INI: {Path.Combine(baseDir, "calibration_docking.ini")}";
+			}
+		}
+
+		private void ApplyModesToUi()
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			AbcModeLaptop.IsChecked = _settings.AbcMode == MachineMode.Laptop;
+			AbcModeDocking.IsChecked = _settings.AbcMode == MachineMode.Docking;
+
+			XModeLaptop.IsChecked = _settings.XMode == MachineMode.Laptop;
+			XModeDocking.IsChecked = _settings.XMode == MachineMode.Docking;
+
+			UpdateAbcIniText();
+			UpdateXIniText();
+		}
+
+		private void ApplyStorageSettingsToUi()
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			AbcBaseFolder.Text = _settings.BaseFolder ?? string.Empty;
+			AbcSammelordner.Text = _settings.SammelordnerPath ?? string.Empty;
+
+			AbcSaveModeSemco.IsChecked = _settings.SaveMode == SaveMode.SemcoUpload;
+			AbcSaveModeAlt.IsChecked = _settings.SaveMode == SaveMode.Alternativ;
+		}
+
+		private async Task SaveAbcStorageSettingsFromUiAsync()
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			_settings.SaveMode = AbcSaveModeAlt.IsChecked == true
+				? SaveMode.Alternativ
+				: SaveMode.SemcoUpload;
+
+			_settings.BaseFolder = AbcBaseFolder.Text?.Trim();
+			_settings.SammelordnerPath = AbcSammelordner.Text?.Trim();
+
+			await SaveSettingsAsync();
+		}
+
+		private void UpdateAbcSaveModeUi()
+		{
+			if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null)
+				return;
+
+			bool isSemco = AbcSaveModeSemco.IsChecked == true;
+			AbcBaseFolder.IsEnabled = isSemco;
+			AbcSammelordner.IsEnabled = !isSemco;
+		}
+
+		private async void AbcSaveModeChanged(object sender, RoutedEventArgs e)
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			UpdateAbcSaveModeUi();
+			await SaveAbcStorageSettingsFromUiAsync();
+
+			if (AbcSaveModeSemco.IsChecked == true)
+				LogAbc("Speicher-Modus: Semco Upload");
+			else
+				LogAbc("Speicher-Modus: Alternativer Ordner");
+		}
+
+		private async void AbcStorageFields_LostFocus(object sender, RoutedEventArgs e)
+		{
+			if (_settings == null)
+				return;
+
+			await SaveAbcStorageSettingsFromUiAsync();
+		}
+
+		private async void AbcCalibration_Click(object sender, RoutedEventArgs e)
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			await RunCalibrationWithPromptAsync(
+				GetCalibrationModeName(_settings.AbcMode),
+				CalibrationProfiles.AbcAnalyse,
+				"ABC Analyse",
+				LogAbc);
+		}
+
+		private void AbcCapturePoint_Click(object sender, RoutedEventArgs e)
+		{
+			LogAbc("Der alte Button 'Mauspunkt übernehmen' wird für den neuen Dialog-Workflow nicht mehr verwendet.");
+		}
+
+		private async void AbcBrowse_Click(object sender, RoutedEventArgs e)
+		{
+			string currentPath = AbcBaseFolder.Text?.Trim() ?? string.Empty;
+			string? selectedFolder = BrowseForFolder(currentPath);
+
+			if (!string.IsNullOrWhiteSpace(selectedFolder))
+			{
+				AbcBaseFolder.Text = selectedFolder;
+				await SaveAbcStorageSettingsFromUiAsync();
+				LogAbc($"Basisordner gewählt: {selectedFolder}");
+			}
+			else
+			{
+				LogAbc("Browse (ABC Basisordner) abgebrochen.");
+			}
+		}
+
+		private async void AbcBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+		{
+			string currentPath = AbcSammelordner.Text?.Trim() ?? string.Empty;
+			string? selectedFolder = BrowseForFolder(currentPath);
+
+			if (!string.IsNullOrWhiteSpace(selectedFolder))
+			{
+				AbcSammelordner.Text = selectedFolder;
+				await SaveAbcStorageSettingsFromUiAsync();
+				LogAbc($"Alternativer Ordner gewählt: {selectedFolder}");
+			}
+			else
+			{
+				LogAbc("Browse (ABC Alternativ-Ordner) abgebrochen.");
+			}
+		}
+
+		private void AbcResetPos_Click(object sender, RoutedEventArgs e)
+		{
+			AbcPosList.UnselectAll();
+			LogAbc("POS Auswahl zurückgesetzt.");
+		}
+
+		private async void AbcStart_Click(object sender, RoutedEventArgs e)
+		{
+			if (_automationService == null)
+			{
+				LogAbc("Automation ist noch nicht bereit. Bitte Fenster neu laden oder Kalibrierung prüfen.");
+				return;
+			}
+
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			await SaveAbcStorageSettingsFromUiAsync();
+
+			var selectedPosValues = AbcPosList.SelectedItems
+				.Cast<object>()
+				.Select(item => item?.ToString() ?? string.Empty)
+				.Where(value => !string.IsNullOrWhiteSpace(value))
+				.ToList();
+
+			string activePath = _settings.SaveMode == SaveMode.SemcoUpload
+				? (_settings.BaseFolder ?? string.Empty)
+				: (_settings.SammelordnerPath ?? string.Empty);
+
+			var request = new AbcStartRequest
+			{
+				Mode = _settings.AbcMode,
+				BaseFolder = activePath,
+				UseSammelordner = _settings.SaveMode == SaveMode.Alternativ,
+				SelectedPosCount = selectedPosValues.Count,
+				SelectedPosValues = selectedPosValues
+			};
+
+			LogAbc($"Start ABC mit Speicher-Modus: {_settings.SaveMode}");
+			LogAbc($"Aktiver Zielpfad: {activePath}");
+
+			var results = _automationService.StartAbcAutomation(request);
+
+			foreach (var line in results)
+			{
+				LogAbc(line);
+			}
+		}
+
+		private void AbcStop_Click(object sender, RoutedEventArgs e)
+		{
+			LogAbc("Stop (ABC) gedrückt.");
+		}
+
+		private async void XCalibration_Click(object sender, RoutedEventArgs e)
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			await RunCalibrationWithPromptAsync(
+				GetCalibrationModeName(_settings.XMode),
+				CalibrationProfiles.XListe,
+				"X-Liste",
+				LogX);
+		}
+
+		private void XCapturePoint_Click(object sender, RoutedEventArgs e)
+		{
+			LogX("Der alte Button 'Mauspunkt übernehmen' wird für den neuen Dialog-Workflow nicht mehr verwendet.");
+		}
+
+		private void XBrowse_Click(object sender, RoutedEventArgs e)
+		{
+			string currentPath = XBaseFolder.Text?.Trim() ?? string.Empty;
+			string? selectedFolder = BrowseForFolder(currentPath);
+
+			if (!string.IsNullOrWhiteSpace(selectedFolder))
+			{
+				XBaseFolder.Text = selectedFolder;
+				LogX($"Basisordner gewählt: {selectedFolder}");
+			}
+			else
+			{
+				LogX("Browse (X-Liste) abgebrochen.");
+			}
+		}
+
+		private void XResetPos_Click(object sender, RoutedEventArgs e)
+		{
+			XPosList.UnselectAll();
+			LogX("POS Auswahl zurückgesetzt.");
+		}
+
+		private void XStart_Click(object sender, RoutedEventArgs e)
+		{
+			LogX("Start (X-Liste) gedrückt.");
+		}
+
+		private void XStop_Click(object sender, RoutedEventArgs e)
+		{
+			LogX("Stop (X-Liste) gedrückt.");
+		}
+
+		private void LogAbc(string msg)
+		{
+			AbcLogBox.AppendText($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {msg}\n");
+			AbcLogBox.ScrollToEnd();
+		}
+
+		private void LogX(string msg)
+		{
+			XLogBox.AppendText($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {msg}\n");
+			XLogBox.ScrollToEnd();
+		}
+	}
+}

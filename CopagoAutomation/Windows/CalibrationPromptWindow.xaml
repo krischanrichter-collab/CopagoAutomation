@@ -1,0 +1,128 @@
+﻿<Window x:Class="CopagoAutomation.Windows.CalibrationPromptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kalibrierung"
+        Height="320"
+        Width="520"
+        MinHeight="320"
+        MinWidth="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+	<Grid Margin="18">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="14"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="10"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="10"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="16"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+
+		<!-- Titel -->
+		<TextBlock Grid.Row="0"
+                   Text="Kalibrierungspunkt"
+                   FontSize="22"
+                   FontWeight="SemiBold" />
+
+		<!-- Schrittname -->
+		<Border Grid.Row="2"
+                Padding="12"
+                CornerRadius="8"
+                BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                Background="#F8F8F8">
+			<StackPanel>
+				<TextBlock Text="Aktueller Schritt"
+                           FontSize="12"
+                           Foreground="#666666" />
+				<TextBlock x:Name="StepTitleText"
+                           Margin="0,4,0,0"
+                           Text="Dropdown &quot;Filiale&quot;"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap" />
+			</StackPanel>
+		</Border>
+
+		<!-- Hotkey -->
+		<Border Grid.Row="4"
+                Padding="12"
+                CornerRadius="8"
+                BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                Background="#F4F8FF">
+			<StackPanel>
+				<TextBlock Text="Tastenkombination zum Übernehmen"
+                           FontSize="12"
+                           Foreground="#666666" />
+				<TextBlock x:Name="HotkeyTextBlock"
+                           Margin="0,4,0,0"
+                           Text="Strg+Alt+1"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           TextWrapping="Wrap" />
+			</StackPanel>
+		</Border>
+
+		<!-- Anleitung + Status -->
+		<Border Grid.Row="6"
+                Padding="12"
+                CornerRadius="8"
+                BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                Background="White">
+			<StackPanel>
+				<TextBlock Text="Anweisung"
+                           FontSize="12"
+                           Foreground="#666666" />
+
+				<TextBlock x:Name="InstructionTextBlock"
+                           Margin="0,4,0,10"
+                           Text="Platziere die Maus mittig auf dem gewünschten Punkt und drücke danach die angezeigte Tastenkombination."
+                           FontSize="14"
+                           TextWrapping="Wrap" />
+
+				<Separator Margin="0,2,0,10"/>
+
+				<TextBlock Text="Status"
+                           FontSize="12"
+                           Foreground="#666666" />
+
+				<TextBlock x:Name="StatusTextBlock"
+                           Margin="0,4,0,0"
+                           Text="Warte auf Tastenkombination..."
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Foreground="#A15C00"
+                           TextWrapping="Wrap" />
+			</StackPanel>
+		</Border>
+
+		<!-- Buttons -->
+		<Grid Grid.Row="8">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="Auto" />
+				<ColumnDefinition Width="10" />
+				<ColumnDefinition Width="Auto" />
+			</Grid.ColumnDefinitions>
+
+			<Button x:Name="OkButton"
+                    Grid.Column="1"
+                    Width="110"
+                    Height="34"
+                    Content="OK"
+                    IsEnabled="False"
+                    Margin="0,0,0,0" />
+
+			<Button x:Name="CancelButton"
+                    Grid.Column="3"
+                    Width="110"
+                    Height="34"
+                    Content="Abbrechen" />
+		</Grid>
+	</Grid>
+</Window>

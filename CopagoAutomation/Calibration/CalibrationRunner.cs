@@ -1,0 +1,57 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace CopagoAutomation.Calibration
+{
+	class CalibrationRunner
+	{
+		private readonly List<CalibrationStepDefinition> _steps;
+
+		public string ProfileName { get; }
+
+		public int CurrentIndex { get; private set; }
+
+		public bool HasSteps => _steps.Count > 0;
+
+		public bool IsFinished => !HasSteps || CurrentIndex >= _steps.Count;
+
+		public CalibrationStepDefinition? CurrentStep
+		{
+			get
+			{
+				if (IsFinished)
+					return null;
+
+				return _steps[CurrentIndex];
+			}
+		}
+
+		public IReadOnlyList<CalibrationStepDefinition> Steps => _steps;
+
+		public CalibrationRunner(string profileName)
+		{
+			if (string.IsNullOrWhiteSpace(profileName))
+				throw new ArgumentException("Profile name must not be empty.", nameof(profileName));
+
+			ProfileName = profileName;
+			_steps = new List<CalibrationStepDefinition>(
+				CalibrationDefinitions.GetStepsForProfile(profileName));
+
+			CurrentIndex = 0;
+		}
+
+		public void Reset()
+		{
+			CurrentIndex = 0;
+		}
+
+		public bool MoveNext()
+		{
+			if (IsFinished)
+				return false;
+
+			CurrentIndex++;
+			return !IsFinished;
+		}
+	}
+}
