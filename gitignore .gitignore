@@ -1,0 +1,54 @@
+# Visual Studio / .NET
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.cache
+*.log
+
+# NuGet
+packages/
+*.nupkg
+
+# Build results
+*.dll
+*.exe
+*.pdb
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Test results
+TestResults/
+*.trx
+
+# Temporary files
+*.tmp
+*.bak
+
+# Other
+*.db
+*.local
+local.settings.json
+
+# ins Repo-Verzeichnis wechseln
+cd "C:\Users\k.richter\source\repos\CopagoAutomation"
+
+# aktuellen Status anzeigen
+git status
+
+# prüfen, ob git user gesetzt ist (falls noch nicht)
+git config user.name
+git config user.email
+
+# show .gitignore (falls du Änderungen vornehmen willst)
+type .gitignore
+
+# .gitignore zum Stage hinzufügen
+git add .gitignore
