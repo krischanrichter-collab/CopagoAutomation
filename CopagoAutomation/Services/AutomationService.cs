@@ -24,8 +24,8 @@ namespace CopagoAutomation.Services
 			_pathResolver = pathResolver
 				?? throw new ArgumentNullException(nameof(pathResolver));
 
-            _abcAutomation = new AbcAutomation(_pathResolver);
-            _xAutomation = new XAutomation(_pathResolver);
+            _abcAutomation = new AbcAutomation(_pathResolver, _calibrationService);
+            _xAutomation = new XAutomation(_pathResolver, _calibrationService);
 		}
 
         public List<string> StartAbcAutomation(AbcStartRequest request)
@@ -43,7 +43,7 @@ namespace CopagoAutomation.Services
 
             var requiredPoints = GetRequiredAbcPoints(modeName);
 
-            return _abcAutomation.Run(request, requiredPoints);
+            return _abcAutomation.Run(request, modeName, AbcProfileName);
         }
 
         public List<string> StartXAutomation(XStartRequest request)
@@ -61,7 +61,7 @@ namespace CopagoAutomation.Services
 
             var requiredPoints = GetRequiredXPoints(modeName);
 
-            return _xAutomation.Run(request, requiredPoints);
+            return _xAutomation.Run(request, modeName, XProfileName);
         }
 
         private Dictionary<string, CalibrationPoint> GetRequiredAbcPoints(string modeName)

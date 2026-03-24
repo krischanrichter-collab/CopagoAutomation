@@ -1,0 +1,17 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+/home/ubuntu/CopagoAutomation/CopagoAutomation/UI/MainWindow.xaml.cs(190,99): error CS0426: The type name 'BoundWindowInfo' does not exist in the type 'WindowAutomation' [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_14pm2tms_wpftmp.csproj]
+/home/ubuntu/CopagoAutomation/CopagoAutomation/ViewModels/MainViewModel.cs(96,70): error CS0426: The type name 'BoundWindowInfo' does not exist in the type 'WindowAutomation' [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_14pm2tms_wpftmp.csproj]
+/home/ubuntu/CopagoAutomation/CopagoAutomation/ViewModels/MainViewModel.cs(115,60): error CS0426: The type name 'BoundWindowInfo' does not exist in the type 'WindowAutomation' [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_14pm2tms_wpftmp.csproj]
+/home/ubuntu/CopagoAutomation/CopagoAutomation/ViewModels/MainViewModel.cs(145,41): error CS0426: The type name 'BoundWindowInfo' does not exist in the type 'WindowAutomation' [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_14pm2tms_wpftmp.csproj]
+
+Build FAILED.
+
+/home/ubuntu/CopagoAutomation/CopagoAutomation/UI/MainWindow.xaml.cs(190,99): error CS0426: The type name 'BoundWindowInfo' does not exist in the type 'WindowAutomation' [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_14pm2tms_wpftmp.csproj]
+/home/ubuntu/CopagoAutomation/CopagoAutomation/ViewModels/MainViewModel.cs(96,70): error CS0426: The type name 'BoundWindowInfo' does not exist in the type 'WindowAutomation' [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_14pm2tms_wpftmp.csproj]
+/home/ubuntu/CopagoAutomation/CopagoAutomation/ViewModels/MainViewModel.cs(115,60): error CS0426: The type name 'BoundWindowInfo' does not exist in the type 'WindowAutomation' [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_14pm2tms_wpftmp.csproj]
+/home/ubuntu/CopagoAutomation/CopagoAutomation/ViewModels/MainViewModel.cs(145,41): error CS0426: The type name 'BoundWindowInfo' does not exist in the type 'WindowAutomation' [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_14pm2tms_wpftmp.csproj]
+    0 Warning(s)
+    4 Error(s)
+
+Time Elapsed 00:00:01.38

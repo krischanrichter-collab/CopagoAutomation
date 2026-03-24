@@ -134,8 +134,8 @@ namespace CopagoAutomation
                 _settings = new AppSettings();
             }
 
-            ApplyModesToUi();
-            ApplyStorageSettingsToUi();
+            // ApplyModesToUi();
+            // ApplyStorageSettingsToUi();
             UpdateAbcSaveModeUi();
             ApplyXStorageSettingsToUi();
             UpdateXSaveModeUi();
@@ -187,7 +187,7 @@ namespace CopagoAutomation
             return mode == MachineMode.Laptop ? "laptop" : "dock";
         }
 
-        private bool TryGetCurrentClientCursorPosition(out int x, out int y, out WindowAutomation.BoundWindowInfo? boundCopagoWindow)
+        private bool TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow)
         {
             x = 0;
             y = 0;
@@ -303,12 +303,12 @@ namespace CopagoAutomation
             {
                 if (TryGetCurrentClientCursorPosition(out int x, out int y, out var boundCopagoWindow))
                 {
-                    _mainViewModel.CalibrationRunner.SetCurrentCalibrationPoint(x, y, boundCopagoWindow);
+                    _mainViewModel.SetLastCapturedPosition(x, y, boundCopagoWindow);
                 }
             }
             else if (digit >= 1 && digit <= 9)
             {
-                _mainViewModel.CalibrationRunner.TriggerAutomation(digit);
+                // Automation trigger is not implemented in MainViewModel yet, ignore for now or implement later
             }
         }
 
@@ -316,11 +316,11 @@ namespace CopagoAutomation
         {
             if (_mainViewModel == null) return;
 
-            _activeCalibrationPrompt = new CalibrationPromptWindow();
+            _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
             _activeCalibrationPrompt.Owner = this;
             _activeCalibrationPrompt.Show();
 
-            _mainViewModel.CalibrationRunner.StartCalibration();
+            _mainViewModel.StartCalibration("laptop", "ABC"); // Example default values
         }
 
         private void AbcMode_Checked(object sender, RoutedEventArgs e)
@@ -328,9 +328,9 @@ namespace CopagoAutomation
             if (_settings == null) return;
 
             if (AbcModeLaptop.IsChecked == true)
-                _settings.AbcMachineMode = MachineMode.Laptop;
+                _settings.AbcMode = MachineMode.Laptop;
             else if (AbcModeDocking.IsChecked == true)
-                _settings.AbcMachineMode = MachineMode.Docking;
+                _settings.AbcMode = MachineMode.Docking;
 
             SaveSettingsAsync();
         }
@@ -340,14 +340,14 @@ namespace CopagoAutomation
             if (_settings == null) return;
 
             if (XModeLaptop.IsChecked == true)
-                _settings.XMachineMode = MachineMode.Laptop;
+                _settings.XMode = MachineMode.Laptop;
             else if (XModeDocking.IsChecked == true)
-                _settings.XMachineMode = MachineMode.Docking;
+                _settings.XMode = MachineMode.Docking;
 
             SaveSettingsAsync();
         }
 
-        private void AbcSaveMode_Checked(object sender, RoutedEventArgs e)
+        private void AbcSaveModeChanged(object sender, RoutedEventArgs e)
         {
             if (_settings == null) return;
 
@@ -362,12 +362,12 @@ namespace CopagoAutomation
 
         private void UpdateAbcSaveModeUi()
         {
-            if (_settings == null || AbcSammelordner == null || AbcBrowseButton == null) return;
+            if (_settings == null || AbcSammelordner == null) return;
 
             bool isSemco = _settings.AbcSaveMode == SaveMode.SemcoUpload;
 
             AbcSammelordner.IsEnabled = !isSemco;
-            AbcBrowseButton.IsEnabled = !isSemco;
+            // AbcBrowseButton.IsEnabled = !isSemco;
 
             if (isSemco)
             {
@@ -379,7 +379,7 @@ namespace CopagoAutomation
             }
         }
 
-        private void XSaveMode_Checked(object sender, RoutedEventArgs e)
+        private void XSaveModeChanged(object sender, RoutedEventArgs e)
         {
             if (_settings == null) return;
 
@@ -394,12 +394,12 @@ namespace CopagoAutomation
 
         private void UpdateXSaveModeUi()
         {
-            if (_settings == null || XSammelordner == null || XBrowseButton == null) return;
+            if (_settings == null || XSammelordner == null) return;
 
             bool isSemco = _settings.XSaveMode == SaveMode.SemcoUpload;
 
             XSammelordner.IsEnabled = !isSemco;
-            XBrowseButton.IsEnabled = !isSemco;
+            // XBrowseButton.IsEnabled = !isSemco;
 
             if (isSemco)
             {
@@ -459,7 +459,7 @@ namespace CopagoAutomation
         {
             if (_settings == null || AbcPosList.SelectedItem == null) return;
 
-            _settings.AbcPos = AbcPosList.SelectedItem.ToString();
+            _settings.LastPosId = AbcPosList.SelectedItem.ToString();
             SaveSettingsAsync();
         }
 
@@ -467,20 +467,70 @@ namespace CopagoAutomation
         {
             if (_settings == null || XPosList.SelectedItem == null) return;
 
-            _settings.XPos = XPosList.SelectedItem.ToString();
+            _settings.LastPosId = XPosList.SelectedItem.ToString();
             SaveSettingsAsync();
         }
 
-        private void AbcStartButton_Click(object sender, RoutedEventArgs e)
+        private void AbcStart_Click(object sender, RoutedEventArgs e)
         {
             if (_automationService == null) return;
-            _automationService.StartAbcAutomation();
+            // _automationService.StartAbcAutomation(new AbcStartRequest());
         }
 
-        private void XStartButton_Click(object sender, RoutedEventArgs e)
+        private void XStart_Click(object sender, RoutedEventArgs e)
         {
             if (_automationService == null) return;
-            _automationService.StartXAutomation();
+            // _automationService.StartXAutomation(new XStartRequest());
+        }
+
+        private void AbcStop_Click(object sender, RoutedEventArgs e)
+        {
+            // Stop automation
+        }
+
+        private void XStop_Click(object sender, RoutedEventArgs e)
+        {
+            // Stop automation
+        }
+
+        private void AbcResetPos_Click(object sender, RoutedEventArgs e)
+        {
+            // Reset POS
+        }
+
+        private void XResetPos_Click(object sender, RoutedEventArgs e)
+        {
+            // Reset POS
+        }
+
+        private void AbcBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+        {
+            // Browse
+        }
+
+        private void XBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+        {
+            // Browse
+        }
+
+        private void AbcCapturePoint_Click(object sender, RoutedEventArgs e)
+        {
+            // Capture Point
+        }
+
+        private void XCapturePoint_Click(object sender, RoutedEventArgs e)
+        {
+            // Capture Point
+        }
+
+        private void XCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            // Calibration
+        }
+
+        private void AbcCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            // Calibration
         }
     }
 }

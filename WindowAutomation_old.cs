@@ -1,100 +1,22 @@
-
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Drawing; // Für System.Drawing.Rectangle
 
+// WPF-Projekte benötigen normalerweise keinen direkten Verweis auf System.Windows.Forms.
+// Wenn Screen.PrimaryScreen.Bounds benötigt wird, muss der Verweis im Projekt hinzugefügt werden.
+// Für GetDpiScaleFactor und andere Win32-Aufrufe ist System.Windows.Forms nicht direkt erforderlich.
+// Wenn es nur für die RECT-Struktur war, wird jetzt System.Drawing.Rectangle verwendet.
+
 namespace CopagoAutomation.Automation
 {
     public class WindowAutomation
     {
+        // Delegat muss public sein, da er in einer public Methode verwendet wird
         public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
         private const int DefaultWindowTextCapacity = 512;
         private const int SW_RESTORE = 9;
-
-        // Win32 API Konstanten
-        private const int LOGPIXELSX = 88;
-        private const int LOGPIXELSY = 90;
-        private const int INPUT_MOUSE = 0;
-        private const int INPUT_KEYBOARD = 1;
-        private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
-        private const uint MOUSEEVENTF_LEFTUP = 0x0004;
-        private const uint KEYEVENTF_KEYUP = 0x0002;
-        private const uint KEYEVENTF_UNICODE = 0x0004;
-        private const ushort VK_CONTROL = 0x11;
-        private const ushort VK_A = 0x41;
-
-        public const uint GA_ROOT = 2;
-        public const uint MOD_NONE = 0x0000;
-        public const uint MOD_ALT = 0x0001;
-        public const uint MOD_CONTROL = 0x0002;
-        public const uint MOD_SHIFT = 0x0004;
-        public const uint MOD_WIN = 0x0008;
-
-        // Win32 API Strukturen
-        [StructLayout(LayoutKind.Sequential)]
-        public struct POINT
-        {
-            public int X;
-            public int Y;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct RECT
-        {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct INPUT
-        {
-            public int type;
-            public InputUnion U;
-        }
-
-        [StructLayout(LayoutKind.Explicit)]
-        public struct InputUnion
-        {
-            [FieldOffset(0)]
-            public MOUSEINPUT mi;
-            [FieldOffset(0)]
-            public KEYBDINPUT ki;
-            [FieldOffset(0)]
-            public HARDWAREINPUT hi;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct MOUSEINPUT
-        {
-            public int dx;
-            public int dy;
-            public uint mouseData;
-            public uint dwFlags;
-            public uint time;
-            public IntPtr dwExtraInfo;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct KEYBDINPUT
-        {
-            public ushort wVk;
-            public ushort wScan;
-            public uint dwFlags;
-            public uint time;
-            public IntPtr dwExtraInfo;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct HARDWAREINPUT
-        {
-            public uint uMsg;
-            public ushort wParamL;
-            public ushort wParamH;
-        }
 
         // Win32 API Imports
         [DllImport("user32.dll")]
@@ -105,6 +27,9 @@ namespace CopagoAutomation.Automation
 
         [DllImport("gdi32.dll")]
         public static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
+
+        private const int LOGPIXELSX = 88;
+        private const int LOGPIXELSY = 90;
 
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
@@ -117,9 +42,6 @@ namespace CopagoAutomation.Automation
 
         [DllImport("user32.dll")]
         public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
-
-        [DllImport("user32.dll")]
-        public static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
 
         [DllImport("user32.dll")]
         public static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -138,6 +60,9 @@ namespace CopagoAutomation.Automation
 
         [DllImport("user32.dll")]
         public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
 
         [DllImport("user32.dll")]
         public static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
@@ -166,7 +91,86 @@ namespace CopagoAutomation.Automation
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-        // Wrapper-Methoden
+        private const int INPUT_MOUSE = 0;
+        private const int INPUT_KEYBOARD = 1;
+
+        private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+        private const uint MOUSEEVENTF_LEFTUP = 0x0004;
+
+        private const uint KEYEVENTF_KEYUP = 0x0002;
+        private const uint KEYEVENTF_UNICODE = 0x0004;
+
+        private const ushort VK_CONTROL = 0x11;
+        private const ushort VK_A = 0x41;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
+        {
+            public int X;
+            public int Y;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        // INPUT struct muss public sein, da sie in einer public Methode verwendet wird
+        [StructLayout(LayoutKind.Sequential)]
+        public struct INPUT
+        {
+            public int type;
+            public InputUnion U;
+        }
+
+        // InputUnion muss public sein
+        [StructLayout(LayoutKind.Explicit)]
+        public struct InputUnion
+        {
+            [FieldOffset(0)]
+            public MOUSEINPUT mi;
+            [FieldOffset(0)]
+            public KEYBDINPUT ki;
+            [FieldOffset(0)]
+            public HARDWAREINPUT hi;
+        }
+
+        // MOUSEINPUT muss public sein
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MOUSEINPUT
+        {
+            public int dx;
+            public int dy;
+            public uint mouseData;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        // KEYBDINPUT muss public sein
+        [StructLayout(LayoutKind.Sequential)]
+        public struct KEYBDINPUT
+        {
+            public ushort wVk;
+            public ushort wScan;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        // HARDWAREINPUT muss public sein
+        [StructLayout(LayoutKind.Sequential)]
+        public struct HARDWAREINPUT
+        {
+            public uint uMsg;
+            public ushort wParamL;
+            public ushort wParamH;
+        }
+
         public void SetCursorPosition(int x, int y)
         {
             SetCursorPos(x, y);
@@ -196,39 +200,6 @@ namespace CopagoAutomation.Automation
                     mi = new MOUSEINPUT
                     {
                         dwFlags = MOUSEEVENTF_LEFTUP
-                    }
-                }
-            };
-
-            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-        }
-
-        public void RightClick()
-        {
-            // Implementierung für RightClick, da sie in MouseAutomation.cs verwendet wird
-            // MOUSEEVENTF_RIGHTDOWN = 0x0008, MOUSEEVENTF_RIGHTUP = 0x0010
-            var inputs = new INPUT[2];
-
-            inputs[0] = new INPUT
-            {
-                type = INPUT_MOUSE,
-                U = new InputUnion
-                {
-                    mi = new MOUSEINPUT
-                    {
-                        dwFlags = 0x0008 // MOUSEEVENTF_RIGHTDOWN
-                    }
-                }
-            };
-
-            inputs[1] = new INPUT
-            {
-                type = INPUT_MOUSE,
-                U = new InputUnion
-                {
-                    mi = new MOUSEINPUT
-                    {
-                        dwFlags = 0x0010 // MOUSEEVENTF_RIGHTUP
                     }
                 }
             };
@@ -337,12 +308,24 @@ namespace CopagoAutomation.Automation
             int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
             ReleaseDC(IntPtr.Zero, hdc);
 
+            // Standard-DPI ist 96
             return (float)dpiX / 96.0f;
         }
 
         public IntPtr GetActiveWindowHandle()
         {
             return GetForegroundWindow();
+        }
+
+        public IntPtr GetWindowFromPoint(int x, int y)
+        {
+            POINT p = new POINT { X = x, Y = y };
+            return WindowFromPoint(p);
+        }
+
+        public IntPtr GetRootWindow(IntPtr hWnd)
+        {
+            return GetAncestor(hWnd, GA_ROOT);
         }
 
         public System.Drawing.Point GetCursorScreenPosition()
@@ -423,26 +406,25 @@ namespace CopagoAutomation.Automation
 
         public bool TryFindWindowByTitleContains(string titlePart, out IntPtr handle)
         {
-            IntPtr foundHandle = IntPtr.Zero;
+            handle = IntPtr.Zero;
             EnumWindows((hWnd, lParam) =>
             {
                 if (IsWindowVisible(hWnd) && GetWindowTitle(hWnd).Contains(titlePart, StringComparison.OrdinalIgnoreCase))
                 {
-                    foundHandle = hWnd;
+                    handle = hWnd;
                     return false; // Stop enumeration
                 }
                 return true; // Continue enumeration
             }, IntPtr.Zero);
-            handle = foundHandle;
             return handle != IntPtr.Zero;
         }
 
         public bool TryBindWindowByTitleContains(string titlePart, out BoundWindowInfo boundWindow)
         {
-            boundWindow = new BoundWindowInfo(IntPtr.Zero, string.Empty);
+            boundWindow = BoundWindowInfo.Empty;
             if (TryFindWindowByTitleContains(titlePart, out var handle))
             {
-                boundWindow = new BoundWindowInfo(handle, GetWindowTitle(handle), GetClientRect(handle));
+                boundWindow = new BoundWindowInfo(handle, GetWindowTitle(handle), GetWindowRect(handle), GetClientRect(handle));
                 return true;
             }
             return false;
@@ -450,10 +432,10 @@ namespace CopagoAutomation.Automation
 
         public bool TryBindWindowByHandle(IntPtr handle, out BoundWindowInfo boundWindow)
         {
-            boundWindow = new BoundWindowInfo(IntPtr.Zero, string.Empty);
+            boundWindow = BoundWindowInfo.Empty;
             if (IsValidHandle(handle))
             {
-                boundWindow = new BoundWindowInfo(handle, GetWindowTitle(handle), GetClientRect(handle));
+                boundWindow = new BoundWindowInfo(handle, GetWindowTitle(handle), GetWindowRect(handle), GetClientRect(handle));
                 return true;
             }
             return false;
@@ -487,16 +469,6 @@ namespace CopagoAutomation.Automation
             return new Rectangle(topLeft.X, topLeft.Y, rect.Right - rect.Left, rect.Bottom - rect.Top);
         }
 
-        public bool TryGetClientRect(IntPtr hWnd, out Rectangle clientRect)
-        {
-            clientRect = Rectangle.Empty;
-            if (!IsValidHandle(hWnd))
-                return false;
-
-            clientRect = GetClientRect(hWnd);
-            return true;
-        }
-
         public bool IsValidHandle(IntPtr handle)
         {
             return handle != IntPtr.Zero && IsWindow(handle);
@@ -507,6 +479,27 @@ namespace CopagoAutomation.Automation
             return IsValidHandle(boundWindow.Handle);
         }
 
+        // BoundWindowInfo als struct, da es nur Daten hält und keine komplexen Operationen hat
+        // Properties müssen get; set; sein, wenn die struct nicht readonly ist, oder readonly, wenn die struct readonly ist.
+        // Da wir die Werte im Konstruktor setzen, kann die struct readonly sein und die Properties auch.
+        public readonly struct BoundWindowInfo
+        {
+            public IntPtr Handle { get; }
+            public string Title { get; }
+            public Rectangle WindowRect { get; }
+            public Rectangle ClientRect { get; }
 
+            public BoundWindowInfo(IntPtr handle, string title, Rectangle windowRect, Rectangle clientRect)
+            {
+                Handle = handle;
+                Title = title;
+                WindowRect = windowRect;
+                ClientRect = clientRect;
+            }
+
+            public static BoundWindowInfo Empty => new BoundWindowInfo(IntPtr.Zero, string.Empty, Rectangle.Empty, Rectangle.Empty);
+
+            public bool IsEmpty => Handle == IntPtr.Zero;
+        }
     }
 }

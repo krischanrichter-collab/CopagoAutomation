@@ -27,33 +27,30 @@ namespace CopagoAutomation.Automation
 
         private readonly WindowAutomation _windowAutomation;
         private readonly PathResolver _pathResolver;
+        private readonly CalibrationService _calibrationService;
 
-        public XAutomation(PathResolver pathResolver)
-            : this(new WindowAutomation(), pathResolver)
+        public XAutomation(PathResolver pathResolver, CalibrationService calibrationService)
+            : this(new WindowAutomation(), pathResolver, calibrationService)
         {
         }
 
-        public XAutomation(WindowAutomation windowAutomation, PathResolver pathResolver)
+        public XAutomation(WindowAutomation windowAutomation, PathResolver pathResolver, CalibrationService calibrationService)
         {
             _windowAutomation = windowAutomation ?? throw new ArgumentNullException(nameof(windowAutomation));
             _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+            _calibrationService = calibrationService ?? throw new ArgumentNullException(nameof(calibrationService));
         }
 
         public List<string> Run(
             XStartRequest request,
-            IReadOnlyDictionary<string, CalibrationPoint> calibrationPoints)
+            string calibrationModeName,
+            string calibrationProfileName)
         {
             var logs = new List<string>();
 
             if (request == null)
             {
                 logs.Add("Fehler: Request ist null.");
-                return logs;
-            }
-
-            if (calibrationPoints == null)
-            {
-                logs.Add("Fehler: Kalibrierpunkte fehlen.");
                 return logs;
             }
 
@@ -68,20 +65,26 @@ namespace CopagoAutomation.Automation
                 return logs;
             }
 
-            // TODO: Kalibrierpunkte für X-Liste anpassen
-            if (!TryGetRequiredPoint(calibrationPoints, "POS", out var posPoint, logs)) return logs;
-            if (!TryGetRequiredPoint(calibrationPoints, "Year", out var yearPoint, logs)) return logs;
-            if (!TryGetRequiredPoint(calibrationPoints, "CumPercent", out var cumPercentPoint, logs)) return logs;
-            if (!TryGetRequiredPoint(calibrationPoints, "ToWeek", out var toWeekPoint, logs)) return logs;
-            if (!TryGetRequiredPoint(calibrationPoints, "RunReport", out var runReportPoint, logs)) return logs;
-            if (!TryGetRequiredPoint(calibrationPoints, "OutputSave", out var outputSavePoint, logs)) return logs;
-            if (!TryGetRequiredPoint(calibrationPoints, "OutputClose", out var outputClosePoint, logs)) return logs;
-
             if (!_windowAutomation.TryBindWindowByTitleContains(CopagoWindowTitlePart, out var boundWindow))
             {
                 logs.Add($"Fehler: Copago Fenster konnte nicht gefunden werden. Erwarteter Titelteil: '{CopagoWindowTitlePart}'.");
                 return logs;
             }
+
+            var posPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "POS", boundWindow);
+            if (posPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'POS' fehlt."); return logs; }
+            var yearPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "Year", boundWindow);
+            if (yearPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'Year' fehlt."); return logs; }
+            var cumPercentPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "CumPercent", boundWindow);
+            if (cumPercentPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'CumPercent' fehlt."); return logs; }
+            var toWeekPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "ToWeek", boundWindow);
+            if (toWeekPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'ToWeek' fehlt."); return logs; }
+            var runReportPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "RunReport", boundWindow);
+            if (runReportPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'RunReport' fehlt."); return logs; }
+            var outputSavePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputSave", boundWindow);
+            if (outputSavePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'OutputSave' fehlt."); return logs; }
+            var outputClosePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputClose", boundWindow);
+            if (outputClosePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'OutputClose' fehlt."); return logs; }
 
             if (!_windowAutomation.TryActivateBoundWindow(boundWindow))
             {
@@ -118,7 +121,7 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    ClickPoint(posPoint);
+                    ClickPoint(posPoint, boundWindow);
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -142,7 +145,7 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    ClickPoint(yearPoint);
+                    ClickPoint(yearPoint, boundWindow);
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -160,7 +163,7 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    ClickPoint(cumPercentPoint);
+                    ClickPoint(cumPercentPoint, boundWindow);
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -178,7 +181,7 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    ClickPoint(toWeekPoint);
+                    ClickPoint(toWeekPoint, boundWindow);
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -196,14 +199,14 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    ClickPoint(runReportPoint);
+                    ClickPoint(runReportPoint, boundWindow);
                     logs.Add($"Report für POS {currentPos} gestartet");
                     Sleep(DefaultRunReportWaitMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    ClickPoint(outputSavePoint);
+                    ClickPoint(outputSavePoint, boundWindow);
                     logs.Add($"Save für POS {currentPos} ausgelöst");
                     Sleep(DefaultSaveDialogWaitMs);
 
@@ -214,7 +217,7 @@ namespace CopagoAutomation.Automation
                     // Beispiel: string finalPath = _pathResolver.ResolvePath("X-Liste", currentPos, request.SaveMode);
                     // logs.Add($"Speicherpfad: {finalPath}");
 
-                    ClickPoint(outputClosePoint);
+                    ClickPoint(outputClosePoint, boundWindow);
                     logs.Add($"Fenster für POS {currentPos} geschlossen");
                     Sleep(DefaultActionDelayMs);
                 }
@@ -282,40 +285,30 @@ namespace CopagoAutomation.Automation
             return false;
         }
 
-        private static void ClickPoint(CalibrationPoint point)
+        private void ClickPoint(CalibrationPoint point, BoundWindowInfo boundWindow)
         {
-            SetCursorPos(point.X, point.Y);
+            _windowAutomation.SetCursorPosition(point.X, point.Y);
             Sleep(60);
-            LeftClick();
+            _windowAutomation.LeftClick();
             Sleep(DefaultClickDelayMs);
         }
 
-        private static void SelectAll()
+        private void SelectAll()
         {
-            KeyDown(VK_CONTROL);
-            Sleep(25);
-            KeyPress(VK_A);
-            Sleep(25);
-            KeyUp(VK_CONTROL);
+            _windowAutomation.SelectAll();
             Sleep(60);
         }
 
-        private static void PressKey(ushort virtualKey)
+        private void PressKey(ushort virtualKey)
         {
-            KeyPress(virtualKey);
+            _windowAutomation.KeyPress(virtualKey);
             Sleep(60);
         }
 
-        private static void TypeText(string text)
+        private void TypeText(string text)
         {
-            if (string.IsNullOrEmpty(text))
-                return;
-
-            foreach (char ch in text)
-            {
-                SendUnicodeChar(ch);
-                Sleep(DefaultTypingDelayMs);
-            }
+            _windowAutomation.TypeText(text);
+            Sleep(DefaultTypingDelayMs);
         }
 
         private static void Sleep(int milliseconds)

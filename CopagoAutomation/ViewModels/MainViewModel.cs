@@ -93,7 +93,7 @@ namespace CopagoAutomation.ViewModels
 			NotifyCalibrationStateChanged();
 		}
 
-		public bool SetLastCapturedPosition(int x, int y, WindowAutomation.BoundWindowInfo? boundWindow)
+        public bool SetLastCapturedPosition(int x, int y, BoundWindowInfo? boundWindow)
 		{
 			if (_calibrationRunner == null || _calibrationRunner.IsFinished)
 				return false;
@@ -112,7 +112,7 @@ namespace CopagoAutomation.ViewModels
 			return true;
 		}
 
-		public bool SaveCurrentCalibrationPoint(WindowAutomation.BoundWindowInfo? boundWindow = null)
+        public bool SaveCurrentCalibrationPoint(BoundWindowInfo? boundWindow = null)
 		{
 			if (_calibrationRunner == null || _calibrationRunner.IsFinished)
 				return false;
@@ -142,7 +142,7 @@ namespace CopagoAutomation.ViewModels
 			return true;
 		}
 
-		public void NextStep(WindowAutomation.BoundWindowInfo? boundWindow = null)
+        public void NextStep(BoundWindowInfo? boundWindow = null)
 		{
 			SaveCurrentCalibrationPoint(boundWindow);
 		}

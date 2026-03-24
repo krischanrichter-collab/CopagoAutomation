@@ -115,22 +115,22 @@ var point = profile.Points.FirstOrDefault(p =>
 			var existingPoint = profile.Points.FirstOrDefault(p =>
 				string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
 
-			if (existingPoint != null)
-			{
-				existingPoint.X = x;
-				existingPoint.Y = y;
-				if (boundWindow.HasValue && boundWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var clientRect))
+				if (existingPoint != null)
 				{
-					existingPoint.RelativeX = x - clientRect.Left;
-					existingPoint.RelativeY = y - clientRect.Top;
-					existingPoint.IsRelative = true;
+					existingPoint.X = x;
+					existingPoint.Y = y;
+					if (boundWindow.HasValue && boundWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var rect))
+					{
+						existingPoint.RelativeX = x - rect.Left;
+						existingPoint.RelativeY = y - rect.Top;
+						existingPoint.IsRelative = true;
+					}
+					else
+					{
+						existingPoint.IsRelative = false;
+					}
+					return;
 				}
-				else
-				{
-					existingPoint.IsRelative = false;
-				}
-				return;
-			}
 
 			var newPoint = new CalibrationPoint
 			{
@@ -139,12 +139,12 @@ var point = profile.Points.FirstOrDefault(p =>
 				Y = y
 			};
 
-			if (boundWindow.HasValue && boundWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var clientRect))
-			{
-				newPoint.RelativeX = x - clientRect.Left;
-				newPoint.RelativeY = y - clientRect.Top;
-				newPoint.IsRelative = true;
-			}
+				if (boundWindow.HasValue && boundWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var rect2))
+				{
+					newPoint.RelativeX = x - rect2.Left;
+					newPoint.RelativeY = y - rect2.Top;
+					newPoint.IsRelative = true;
+				}
 			else
 			{
 				newPoint.IsRelative = false;
