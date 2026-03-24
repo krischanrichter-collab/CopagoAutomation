@@ -6,11 +6,14 @@ using System.Windows.Controls;
 
 namespace CopagoAutomation.Controls
 {
-	public partial class DateRuleSelector : UserControl
-	{
-		public DateRuleSelector()
+		public partial class DateRuleSelector : UserControl
 		{
-			InitializeComponent();
+			public DateTime DateFrom => OneTimeFrom?.SelectedDate ?? DateTime.Today;
+			public DateTime DateTo => OneTimeTo?.SelectedDate ?? DateTime.Today;
+
+			public DateRuleSelector()
+			{
+				InitializeComponent();
 
 			// Wichtig: Defaults erst setzen, nachdem alles existiert.
 			Loaded += DateRuleSelector_Loaded;
