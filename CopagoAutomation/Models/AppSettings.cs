@@ -35,15 +35,18 @@ namespace CopagoAutomation.Models
 		// =========================================
 
 		// Welcher Modus ist aktiv
-		public SaveMode SaveMode { get; set; } = SaveMode.SemcoUpload;
+		public SaveMode AbcSaveMode { get; set; } = SaveMode.SemcoUpload;
+public SaveMode XSaveMode { get; set; } = SaveMode.SemcoUpload;
 
 		// Basisordner für Semco-Modus
 		// Beispiel: C:\CopagoReports\
-		public string? BaseFolder { get; set; }
+		public string? AbcBaseFolder { get; set; }
+public string? XBaseFolder { get; set; }
 
 		// Wird im Alternativ-Modus verwendet
 		// → entspricht dem früheren Sammelordner
-		public string? SammelordnerPath { get; set; }
+		public string? AbcSammelordnerPath { get; set; }
+public string? XSammelordnerPath { get; set; }
 
 		// =========================================
 		// (ALT) TEMP / Sammel-Logik (vorerst behalten)
