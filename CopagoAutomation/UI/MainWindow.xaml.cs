@@ -576,17 +576,20 @@ namespace CopagoAutomation
 			UpdateXIniText();
 		}
 
-		private void ApplyStorageSettingsToUi()
-		{
-			if (_settings == null)
-				_settings = new AppSettings();
+			private void ApplyStorageSettingsToUi()
+			{
+				if (_settings == null)
+					_settings = new AppSettings();
 
-			AbcBaseFolder.Text = _settings.BaseFolder ?? string.Empty;
-			AbcSammelordner.Text = _settings.SammelordnerPath ?? string.Empty;
+				if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
+					return;
 
-			AbcSaveModeSemco.IsChecked = _settings.SaveMode == SaveMode.SemcoUpload;
-			AbcSaveModeAlt.IsChecked = _settings.SaveMode == SaveMode.Alternativ;
-		}
+				AbcBaseFolder.Text = _settings.BaseFolder ?? string.Empty;
+				AbcSammelordner.Text = _settings.SammelordnerPath ?? string.Empty;
+
+				AbcSaveModeSemco.IsChecked = _settings.SaveMode == SaveMode.SemcoUpload;
+				AbcSaveModeAlt.IsChecked = _settings.SaveMode == SaveMode.Alternativ;
+			}
 
 		private async Task SaveAbcStorageSettingsFromUiAsync()
 		{
@@ -603,15 +606,15 @@ namespace CopagoAutomation
 			await SaveSettingsAsync();
 		}
 
-		private void UpdateAbcSaveModeUi()
-		{
-			if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null)
-				return;
+			private void UpdateAbcSaveModeUi()
+			{
+				if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
+					return;
 
-			bool isSemco = AbcSaveModeSemco.IsChecked == true;
-			AbcBaseFolder.IsEnabled = isSemco;
-			AbcSammelordner.IsEnabled = !isSemco;
-		}
+				bool isSemco = AbcSaveModeSemco.IsChecked == true;
+				AbcBaseFolder.IsEnabled = isSemco;
+				AbcSammelordner.IsEnabled = !isSemco;
+			}
 
 		private async void AbcSaveModeChanged(object sender, RoutedEventArgs e)
 		{
