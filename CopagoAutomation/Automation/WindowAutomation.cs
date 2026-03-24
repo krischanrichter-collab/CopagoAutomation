@@ -62,6 +62,7 @@ namespace CopagoAutomation.Automation
         public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         [DllImport("user32.dll")]
+        [DllImport("user32.dll")]
         public static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
 
         [DllImport("user32.dll")]
@@ -69,6 +70,15 @@ namespace CopagoAutomation.Automation
 
         [DllImport("user32.dll")]
         public static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr WindowFromPoint(POINT Point);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetCursorPos(out POINT lpPoint);
 
         [DllImport("user32.dll")]
         public static extern void SetCursorPos(int x, int y);
@@ -306,6 +316,24 @@ namespace CopagoAutomation.Automation
         public IntPtr GetActiveWindowHandle()
         {
             return GetForegroundWindow();
+        }
+
+        public IntPtr GetWindowFromPoint(int x, int y)
+        {
+            POINT p = new POINT { X = x, Y = y };
+            return WindowFromPoint(p);
+        }
+
+        public IntPtr GetRootWindow(IntPtr hWnd)
+        {
+            return GetAncestor(hWnd, GA_ROOT);
+        }
+
+        public System.Drawing.Point GetCursorScreenPosition()
+        {
+            POINT p;
+            GetCursorPos(out p);
+            return new System.Drawing.Point(p.X, p.Y);
         }
 
         public bool HasActiveWindow()

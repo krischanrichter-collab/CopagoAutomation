@@ -1,7 +1,6 @@
 using System;
 using CopagoAutomation.Automation;
 using System.Drawing; // For System.Drawing.Point
-using System.Windows.Forms; // For Cursor.Position
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -141,6 +140,21 @@ namespace CopagoAutomation
             UpdateXSaveModeUi();
         }
 
+        private void ApplyXStorageSettingsToUi()
+        {
+            if (_settings == null || XSaveModeSemco == null || XSaveModeAlt == null || XSammelordner == null)
+                return;
+
+            if (_settings.XSaveMode == SaveMode.SemcoUpload)
+                XSaveModeSemco.IsChecked = true;
+            else
+                XSaveModeAlt.IsChecked = true;
+
+            XSammelordner.Text = _settings.XSammelordnerPath;
+
+            UpdateXSaveModeUi();
+        }
+
         private void LoadPosEntries()
         {
             var allPos = PosRepository.GetAll();
@@ -181,7 +195,7 @@ namespace CopagoAutomation
             if (_windowAutomation == null) return false;
 
             // Get current cursor position
-            System.Drawing.Point screenPoint = System.Windows.Forms.Cursor.Position;
+            System.Drawing.Point screenPoint = _windowAutomation.GetCursorScreenPosition();
 
             // Try to get the window under the cursor and its root
             IntPtr childWindow = _windowAutomation.WindowFromPoint(screenPoint);
