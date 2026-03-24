@@ -103,10 +103,14 @@ namespace CopagoAutomation
 		{
 			try
 			{
-				_calibrationData = await _calibrationStorage.LoadAsync();
-				_calibrationService = new CalibrationService(_calibrationData);
-                    _automationService = new AutomationService(_calibrationService, new PathResolver(_settings));
-				_mainViewModel = new MainViewModel(_calibrationService);
+					_calibrationData = await _calibrationStorage.LoadAsync();
+					_calibrationService = new CalibrationService(_calibrationData);
+
+					if (_settings == null)
+						_settings = new AppSettings();
+
+					_automationService = new AutomationService(_calibrationService, new PathResolver(_settings));
+					_mainViewModel = new MainViewModel(_calibrationService);
 			}
 			catch (Exception ex)
 			{
