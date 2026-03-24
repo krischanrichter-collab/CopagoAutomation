@@ -1,13 +1,19 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Windows.Forms;
+using System.Drawing; // Für System.Drawing.Rectangle
+
+// WPF-Projekte benötigen normalerweise keinen direkten Verweis auf System.Windows.Forms.
+// Wenn Screen.PrimaryScreen.Bounds benötigt wird, muss der Verweis im Projekt hinzugefügt werden.
+// Für GetDpiScaleFactor und andere Win32-Aufrufe ist System.Windows.Forms nicht direkt erforderlich.
+// Wenn es nur für die RECT-Struktur war, wird jetzt System.Drawing.Rectangle verwendet.
 
 namespace CopagoAutomation.Automation
 {
     public class WindowAutomation
     {
-        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+        // Delegat muss public sein, da er in einer public Methode verwendet wird
+        public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
         private const int DefaultWindowTextCapacity = 512;
         private const int SW_RESTORE = 9;
@@ -104,15 +110,17 @@ namespace CopagoAutomation.Automation
             public int Bottom;
         }
 
+        // INPUT struct muss public sein, da sie in einer public Methode verwendet wird
         [StructLayout(LayoutKind.Sequential)]
-        private struct INPUT
+        public struct INPUT
         {
             public int type;
             public InputUnion U;
         }
 
+        // InputUnion muss public sein
         [StructLayout(LayoutKind.Explicit)]
-        private struct InputUnion
+        public struct InputUnion
         {
             [FieldOffset(0)]
             public MOUSEINPUT mi;
@@ -122,8 +130,9 @@ namespace CopagoAutomation.Automation
             public HARDWAREINPUT hi;
         }
 
+        // MOUSEINPUT muss public sein
         [StructLayout(LayoutKind.Sequential)]
-        private struct MOUSEINPUT
+        public struct MOUSEINPUT
         {
             public int dx;
             public int dy;
@@ -133,8 +142,9 @@ namespace CopagoAutomation.Automation
             public IntPtr dwExtraInfo;
         }
 
+        // KEYBDINPUT muss public sein
         [StructLayout(LayoutKind.Sequential)]
-        private struct KEYBDINPUT
+        public struct KEYBDINPUT
         {
             public ushort wVk;
             public ushort wScan;
@@ -143,8 +153,9 @@ namespace CopagoAutomation.Automation
             public IntPtr dwExtraInfo;
         }
 
+        // HARDWAREINPUT muss public sein
         [StructLayout(LayoutKind.Sequential)]
-        private struct HARDWAREINPUT
+        public struct HARDWAREINPUT
         {
             public uint uMsg;
             public ushort wParamL;
@@ -366,55 +377,44 @@ namespace CopagoAutomation.Automation
             return GetForegroundWindow() == boundWindow.Handle;
         }
 
-        public bool TryBindWindowByTitleContains(string titlePart, out BoundWindowInfo boundWindow)
+        public bool TryFindWindowByTitleContains(string titlePart, out IntPtr handle)
         {
-            IntPtr foundHandle = IntPtr.Zero;
-            boundWindow = default;
-
+            handle = IntPtr.Zero;
             EnumWindows((hWnd, lParam) =>
             {
                 if (IsWindowVisible(hWnd) && GetWindowTitle(hWnd).Contains(titlePart, StringComparison.OrdinalIgnoreCase))
                 {
-                    foundHandle = hWnd;
+                    handle = hWnd;
                     return false; // Stop enumeration
                 }
-                return true;
+                return true; // Continue enumeration
             }, IntPtr.Zero);
+            return handle != IntPtr.Zero;
+        }
 
-            if (foundHandle != IntPtr.Zero)
+        public bool TryBindWindowByTitleContains(string titlePart, out BoundWindowInfo boundWindow)
+        {
+            boundWindow = BoundWindowInfo.Empty;
+            if (TryFindWindowByTitleContains(titlePart, out var handle))
             {
-                return TryBindWindowByHandle(foundHandle, out boundWindow);
+                boundWindow = new BoundWindowInfo(handle, GetWindowTitle(handle), GetWindowRect(handle), GetClientRect(handle));
+                return true;
             }
-
             return false;
         }
 
         public bool TryBindWindowByHandle(IntPtr handle, out BoundWindowInfo boundWindow)
         {
-            boundWindow = default;
-
-            if (!IsValidHandle(handle))
-                return false;
-
-            RECT windowRect;
-            if (!GetWindowRect(handle, out windowRect))
-                return false;
-
-            RECT clientRect;
-            if (!GetClientRect(handle, out clientRect))
-                return false;
-
-            boundWindow = new BoundWindowInfo
+            boundWindow = BoundWindowInfo.Empty;
+            if (IsValidHandle(handle))
             {
-                Handle = handle,
-                Title = GetWindowTitle(handle),
-                WindowRect = new System.Drawing.Rectangle(windowRect.Left, windowRect.Top, windowRect.Right - windowRect.Left, windowRect.Bottom - windowRect.Top),
-                ClientRect = new System.Drawing.Rectangle(clientRect.Left, clientRect.Top, clientRect.Right - clientRect.Left, clientRect.Bottom - clientRect.Top)
-            };
-            return true;
+                boundWindow = new BoundWindowInfo(handle, GetWindowTitle(handle), GetWindowRect(handle), GetClientRect(handle));
+                return true;
+            }
+            return false;
         }
 
-        private string GetWindowTitle(IntPtr hWnd)
+        public string GetWindowTitle(IntPtr hWnd)
         {
             int length = GetWindowTextLength(hWnd);
             if (length == 0)
@@ -425,22 +425,54 @@ namespace CopagoAutomation.Automation
             return sb.ToString();
         }
 
+        public Rectangle GetWindowRect(IntPtr hWnd)
+        {
+            RECT rect = new RECT();
+            GetWindowRect(hWnd, out rect);
+            return new Rectangle(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+        }
+
+        public Rectangle GetClientRect(IntPtr hWnd)
+        {
+            RECT rect = new RECT();
+            GetClientRect(hWnd, out rect);
+            // ClientRect ist relativ zum Client-Bereich, muss in Bildschirmkoordinaten umgerechnet werden
+            POINT topLeft = new POINT { X = rect.Left, Y = rect.Top };
+            ClientToScreen(hWnd, ref topLeft);
+            return new Rectangle(topLeft.X, topLeft.Y, rect.Right - rect.Left, rect.Bottom - rect.Top);
+        }
+
         public bool IsValidHandle(IntPtr handle)
         {
             return handle != IntPtr.Zero && IsWindow(handle);
         }
 
-        private bool IsWindowValid(BoundWindowInfo boundWindow)
+        public bool IsWindowValid(BoundWindowInfo boundWindow)
         {
             return IsValidHandle(boundWindow.Handle);
         }
-    }
 
-    public struct BoundWindowInfo
-    {
-        public IntPtr Handle { get; set; }
-        public string Title { get; set; }
-        public System.Drawing.Rectangle WindowRect { get; set; }
-        public System.Drawing.Rectangle ClientRect { get; set; }
+        // BoundWindowInfo als struct, da es nur Daten hält und keine komplexen Operationen hat
+        // Properties müssen get; set; sein, wenn die struct nicht readonly ist, oder readonly, wenn die struct readonly ist.
+        // Da wir die Werte im Konstruktor setzen, kann die struct readonly sein und die Properties auch.
+        public readonly struct BoundWindowInfo
+        {
+            public IntPtr Handle { get; }
+            public string Title { get; }
+            public Rectangle WindowRect { get; }
+            public Rectangle ClientRect { get; }
+
+            public BoundWindowInfo(IntPtr handle, string title, Rectangle windowRect, Rectangle clientRect)
+            {
+                Handle = handle;
+                Title = title;
+                WindowRect = windowRect;
+                ClientRect = clientRect;
+            }
+
+            public static BoundWindowInfo Empty => new BoundWindowInfo(IntPtr.Zero, string.Empty, Rectangle.Empty, Rectangle.Empty);
+
+            public bool IsEmpty => Handle == IntPtr.Zero;
+        }
     }
 }
