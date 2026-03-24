@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using CopagoAutomation.Models;
 
@@ -17,24 +17,27 @@ namespace CopagoAutomation.Services
         {
             string basePath;
 
+            // Wir müssen unterscheiden, ob es ein ABC- oder X-Liste-Report ist, 
+            // um die richtigen Einstellungen zu laden.
+            bool isAbc = reportName.Contains("ABC", StringComparison.OrdinalIgnoreCase);
+
             if (saveMode == SaveMode.SemcoUpload)
             {
-                // Im Semco-Modus wird der BaseFolder aus den Einstellungen verwendet
-                // und der Pfad ist fest definiert (BaseFolder\POS\ReportName.pdf)
-                if (string.IsNullOrWhiteSpace(_settings.BaseFolder))
+                basePath = isAbc ? _settings.AbcBaseFolder : _settings.XBaseFolder;
+                
+                if (string.IsNullOrWhiteSpace(basePath))
                 {
-                    throw new InvalidOperationException("BaseFolder ist im Semco-Modus nicht konfiguriert.");
+                    throw new InvalidOperationException($"BaseFolder für {(isAbc ? "ABC" : "X-Liste")} ist im Semco-Modus nicht konfiguriert.");
                 }
-                basePath = _settings.BaseFolder;
             }
             else if (saveMode == SaveMode.Alternativ)
             {
-                // Im Alternativ-Modus wird der SammelordnerPath aus den Einstellungen verwendet
-                if (string.IsNullOrWhiteSpace(_settings.SammelordnerPath))
+                basePath = isAbc ? _settings.AbcSammelordnerPath : _settings.XSammelordnerPath;
+
+                if (string.IsNullOrWhiteSpace(basePath))
                 {
-                    throw new InvalidOperationException("Alternativer Ordner ist im Alternativ-Modus nicht konfiguriert.");
+                    throw new InvalidOperationException($"Alternativer Ordner für {(isAbc ? "ABC" : "X-Liste")} ist im Alternativ-Modus nicht konfiguriert.");
                 }
-                basePath = _settings.SammelordnerPath;
             }
             else
             {

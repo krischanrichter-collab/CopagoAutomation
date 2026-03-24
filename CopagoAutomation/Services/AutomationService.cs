@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CopagoAutomation.Automation;
 using CopagoAutomation.Calibration;
@@ -108,31 +108,7 @@ namespace CopagoAutomation.Services
 
         private static string ResolveModeName(MachineMode mode)
 		{
-            if (mode == MachineMode.Laptop)
-            {
-                return "laptop";
-            }
-            else
-            {
-                return "dock";
-            }
-
-			if (string.IsNullOrWhiteSpace(rawMode))
-			{
-				throw new InvalidOperationException(
-                    "Im Request wurde kein gültiger Modus gefunden. Erwartet wird z. B. 'laptop' oder 'dock'.");
-			}
-
-			string normalized = rawMode.ToLowerInvariant();
-
-			return normalized switch
-			{
-				"laptop" => "laptop",
-				"dock" => "dock",
-				"docking" => "dock",
-				_ => throw new InvalidOperationException(
-					$"Unbekannter Modus '{rawMode}'. Erwartet wird 'laptop' oder 'dock'.")
-			};
+            return mode == MachineMode.Laptop ? "laptop" : "dock";
 		}
 	}
 }
