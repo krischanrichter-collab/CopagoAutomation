@@ -690,7 +690,22 @@ namespace CopagoAutomation
 			LogAbc("Der alte Button 'Mauspunkt übernehmen' wird für den neuen Dialog-Workflow nicht mehr verwendet.");
 		}
 
-		// AbcBrowse_Click und AbcBrowseSammelordner_Click wurden entfernt, da sie im Semco-Modus nicht mehr benötigt werden
+		private async void AbcBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+		{
+			string currentPath = AbcSammelordner.Text?.Trim() ?? string.Empty;
+			string? selectedFolder = BrowseForFolder(currentPath);
+
+			if (!string.IsNullOrWhiteSpace(selectedFolder))
+			{
+				AbcSammelordner.Text = selectedFolder;
+				await SaveAbcStorageSettingsFromUiAsync();
+				LogAbc($"Alternativer Ordner (ABC) gewählt: {selectedFolder}");
+			}
+			else
+			{
+				LogAbc("Browse (ABC Alternativer Ordner) abgebrochen.");
+			}
+		}
 
 		private void AbcResetPos_Click(object sender, RoutedEventArgs e)
 		{
@@ -765,7 +780,22 @@ namespace CopagoAutomation
 			LogX("Der alte Button 'Mauspunkt übernehmen' wird für den neuen Dialog-Workflow nicht mehr verwendet.");
 		}
 
-		// XBrowse_Click und XBrowseSammelordner_Click wurden entfernt, da sie im Semco-Modus nicht mehr benötigt werden
+		private async void XBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+		{
+			string currentPath = XSammelordner.Text?.Trim() ?? string.Empty;
+			string? selectedFolder = BrowseForFolder(currentPath);
+
+			if (!string.IsNullOrWhiteSpace(selectedFolder))
+			{
+				XSammelordner.Text = selectedFolder;
+				await SaveXStorageSettingsFromUiAsync();
+				LogX($"Alternativer Ordner (X-Liste) gewählt: {selectedFolder}");
+			}
+			else
+			{
+				LogX("Browse (X-Liste Alternativer Ordner) abgebrochen.");
+			}
+		}
 
 		private void XResetPos_Click(object sender, RoutedEventArgs e)
 		{
