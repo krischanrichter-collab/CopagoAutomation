@@ -62,7 +62,6 @@ namespace CopagoAutomation.Automation
         public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         [DllImport("user32.dll")]
-        [DllImport("user32.dll")]
         public static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
 
         [DllImport("user32.dll")]

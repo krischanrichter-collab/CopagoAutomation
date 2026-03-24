@@ -198,15 +198,17 @@ namespace CopagoAutomation
             System.Drawing.Point screenPoint = _windowAutomation.GetCursorScreenPosition();
 
             // Try to get the window under the cursor and its root
-            IntPtr childWindow = _windowAutomation.WindowFromPoint(screenPoint);
+            IntPtr childWindow = WindowAutomation.WindowFromPoint(new WindowAutomation.POINT { X = screenPoint.X, Y = screenPoint.Y });
             if (childWindow == IntPtr.Zero) return false;
 
-            IntPtr rootWindow = _windowAutomation.GetAncestor(childWindow, GA_ROOT);
+            IntPtr rootWindow = WindowAutomation.GetAncestor(childWindow, GA_ROOT);
             if (rootWindow == IntPtr.Zero) return false;
 
             // Convert screen coordinates to client coordinates of the root window
             System.Drawing.Point clientPoint = screenPoint;
-            if (!_windowAutomation.ScreenToClient(rootWindow, ref clientPoint)) return false;
+            WindowAutomation.POINT clientPointWin32 = new WindowAutomation.POINT { X = clientPoint.X, Y = clientPoint.Y };
+            if (!WindowAutomation.ScreenToClient(rootWindow, ref clientPointWin32)) return false;
+            clientPoint = new System.Drawing.Point(clientPointWin32.X, clientPointWin32.Y);
 
             // If the root window is Copago, bind it
             if (_windowAutomation.TryBindWindowByHandle(rootWindow, out var copagoWindow))
@@ -252,8 +254,8 @@ namespace CopagoAutomation
                 uint normalVk = (uint)(0x30 + digit);
                 uint numpadVk = (uint)(0x60 + digit);
 
-                _windowAutomation?.RegisterHotKey(handle, normalId, MOD_CONTROL | MOD_ALT, normalVk);
-                _windowAutomation?.RegisterHotKey(handle, numpadId, MOD_CONTROL | MOD_ALT, numpadVk);
+                WindowAutomation.RegisterHotKey(handle, normalId, MOD_CONTROL | MOD_ALT, normalVk);
+                WindowAutomation.RegisterHotKey(handle, numpadId, MOD_CONTROL | MOD_ALT, numpadVk);
             }
         }
 
@@ -268,8 +270,8 @@ namespace CopagoAutomation
                 int normalId = HOTKEY_ID_DIGIT_0 + digit;
                 int numpadId = HOTKEY_ID_NUMPAD_0 + digit;
 
-                _windowAutomation?.UnregisterHotKey(handle, normalId);
-                _windowAutomation?.UnregisterHotKey(handle, numpadId);
+                WindowAutomation.UnregisterHotKey(handle, normalId);
+                WindowAutomation.UnregisterHotKey(handle, numpadId);
             }
         }
 
