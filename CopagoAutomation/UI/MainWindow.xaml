@@ -140,13 +140,12 @@
 								<Grid.RowDefinitions>
 									<RowDefinition Height="Auto"/>
 									<RowDefinition Height="Auto"/>
-									<RowDefinition Height="Auto"/>
 								</Grid.RowDefinitions>
 
 								<!-- 🔥 SaveMode Auswahl -->
 								<StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal">
 									<RadioButton x:Name="AbcSaveModeSemco"
-                     Content="Semco Upload (Standard)"
+                     Content="Semco Upload (Standard - automatische Pfade)"
                      IsChecked="True"
                      Margin="0,0,20,0"
                      Checked="AbcSaveModeChanged"/>
@@ -156,26 +155,13 @@
                      Checked="AbcSaveModeChanged"/>
 								</StackPanel>
 
-								<!-- 🔹 BaseFolder -->
+								<!-- 🔹 Sammelordner (nur für Alternativ-Modus sichtbar) -->
 								<StackPanel Grid.Row="1" Grid.Column="0" Orientation="Vertical" Margin="0,10,0,0">
-									<TextBlock Text="Basisordner (Semco):"/>
-									<TextBox x:Name="AbcBaseFolder" Margin="0,6,0,0"/>
-								</StackPanel>
-
-								<Button Grid.Row="1" Grid.Column="1"
-            Content="Browse..."
-            Width="110"
-            Height="30"
-            Margin="12,30,0,0"
-            Click="AbcBrowse_Click"/>
-
-								<!-- 🔹 Sammelordner -->
-								<StackPanel Grid.Row="2" Grid.Column="0" Orientation="Vertical" Margin="0,10,0,0">
 									<TextBlock Text="Alternativer Ordner:"/>
 									<TextBox x:Name="AbcSammelordner" Margin="0,6,0,0"/>
 								</StackPanel>
 
-								<Button Grid.Row="2" Grid.Column="1"
+								<Button Grid.Row="1" Grid.Column="1"
             Content="Browse..."
             Width="110"
             Height="30"
@@ -352,13 +338,12 @@
 								<Grid.RowDefinitions>
 									<RowDefinition Height="Auto"/>
 									<RowDefinition Height="Auto"/>
-									<RowDefinition Height="Auto"/>
 								</Grid.RowDefinitions>
 
 								<!-- 🔥 SaveMode Auswahl -->
 								<StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal">
 									<RadioButton x:Name="XSaveModeSemco"
-                     Content="Semco Upload (Standard)"
+                     Content="Semco Upload (Standard - automatische Pfade)"
                      IsChecked="True"
                      Margin="0,0,20,0"
                      Checked="XSaveModeChanged"/>
@@ -368,26 +353,13 @@
                      Checked="XSaveModeChanged"/>
 								</StackPanel>
 
-								<!-- 🔹 BaseFolder -->
+								<!-- 🔹 Sammelordner (nur für Alternativ-Modus sichtbar) -->
 								<StackPanel Grid.Row="1" Grid.Column="0" Orientation="Vertical" Margin="0,10,0,0">
-									<TextBlock Text="Basisordner (Semco):"/>
-									<TextBox x:Name="XBaseFolder" Margin="0,6,0,0"/>
-								</StackPanel>
-
-								<Button Grid.Row="1" Grid.Column="1"
-            Content="Browse..."
-            Width="110"
-            Height="30"
-            Margin="12,30,0,0"
-            Click="XBrowse_Click"/>
-
-								<!-- 🔹 Sammelordner -->
-								<StackPanel Grid.Row="2" Grid.Column="0" Orientation="Vertical" Margin="0,10,0,0">
 									<TextBlock Text="Alternativer Ordner:"/>
 									<TextBox x:Name="XSammelordner" Margin="0,6,0,0"/>
 								</StackPanel>
 
-								<Button Grid.Row="2" Grid.Column="1"
+								<Button Grid.Row="1" Grid.Column="1"
             Content="Browse..."
             Width="110"
             Height="30"

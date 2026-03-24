@@ -15,7 +15,7 @@ namespace CopagoAutomation.Services
 
         public string ResolvePath(string reportName, string posId, SaveMode saveMode)
         {
-            string basePath;
+            string? basePath;
 
             // Wir müssen unterscheiden, ob es ein ABC- oder X-Liste-Report ist, 
             // um die richtigen Einstellungen zu laden.
@@ -23,39 +23,41 @@ namespace CopagoAutomation.Services
 
             if (saveMode == SaveMode.SemcoUpload)
             {
+                // Im Semco-Modus wird der BaseFolder aus den Einstellungen verwendet
+                // und der Pfad ist fest definiert (BaseFolder\POS\ReportName.pdf)
                 basePath = isAbc ? _settings.AbcBaseFolder : _settings.XBaseFolder;
                 
                 if (string.IsNullOrWhiteSpace(basePath))
                 {
                     throw new InvalidOperationException($"BaseFolder für {(isAbc ? "ABC" : "X-Liste")} ist im Semco-Modus nicht konfiguriert.");
                 }
+
+                // Für Semco-Upload wird der Pfad automatisch generiert: BaseFolder\POS-ID\ReportName_POS-ID.pdf
+                // Beispiel: C:\CopagoReports\POS123\ABC_Analyse_POS123.pdf
+                string directory = Path.Combine(basePath, posId);
+                string fileName = $"{reportName}_{posId}.pdf";
+                return Path.Combine(directory, fileName);
             }
             else if (saveMode == SaveMode.Alternativ)
             {
+                // Im Alternativ-Modus wird der SammelordnerPath aus den Einstellungen verwendet
+                // und der Pfad ist fest definiert (SammelordnerPath\ReportName_POS-ID.pdf)
                 basePath = isAbc ? _settings.AbcSammelordnerPath : _settings.XSammelordnerPath;
 
                 if (string.IsNullOrWhiteSpace(basePath))
                 {
                     throw new InvalidOperationException($"Alternativer Ordner für {(isAbc ? "ABC" : "X-Liste")} ist im Alternativ-Modus nicht konfiguriert.");
                 }
+
+                // Für Alternativ-Modus wird der Pfad automatisch generiert: SammelordnerPath\ReportName_POS-ID.pdf
+                // Beispiel: C:\AlternativReports\ABC_Analyse_POS123.pdf
+                string fileName = $"{reportName}_{posId}.pdf";
+                return Path.Combine(basePath, fileName);
             }
             else
             {
                 throw new ArgumentOutOfRangeException(nameof(saveMode), "Unbekannter SaveMode.");
             }
-
-            // Sicherstellen, dass der Basispfad mit einem Verzeichnistrennzeichen endet
-            if (!basePath.EndsWith(Path.DirectorySeparatorChar.ToString()))
-            {
-                basePath += Path.DirectorySeparatorChar;
-            }
-
-            // Dateiname basierend auf Report und POS
-            // Beispiel: ABC_Analyse_POS123.pdf
-            string fileName = $"{reportName}_{posId}.pdf";
-
-            // Finaler Pfad
-            return Path.Combine(basePath, fileName);
         }
     }
 }

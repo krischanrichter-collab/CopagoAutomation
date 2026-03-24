@@ -56,8 +56,8 @@ public string? XSammelordnerPath { get; set; }
 		// =========================================
 		// Kalibrierung
 		// =========================================
-		public CalibrationProfile LaptopCalibration { get; set; } = CalibrationProfile.CreateDefault();
-		public CalibrationProfile DockingCalibration { get; set; } = CalibrationProfile.CreateDefault();
+		public CalibrationSettings LaptopCalibration { get; set; } = CalibrationSettings.CreateDefault();
+		public CalibrationSettings DockingCalibration { get; set; } = CalibrationSettings.CreateDefault();
 
 		// =========================================
 		// POS Mapping (für späteren PathResolver)

@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace CopagoAutomation.Models
 {
-	public sealed class CalibrationProfile
+	public sealed class CalibrationSettings
 	{
 		// z.B. "MAP_Report_Menu", "ExplorerListPoint", "DropPoint", ...
 		public Dictionary<string, Point2> Points { get; set; } = new();
@@ -11,9 +11,9 @@ namespace CopagoAutomation.Models
 
 		public void Set(string key, int x, int y) => Points[key] = new Point2 { X = x, Y = y };
 
-		public static CalibrationProfile CreateDefault()
+		public static CalibrationSettings CreateDefault()
 		{
-			var p = new CalibrationProfile();
+			var p = new CalibrationSettings();
 			// Defaults optional – erstmal leer/0 ist okay
 			p.Set("MAP_Report_Menu", 0, 0);
 			p.Set("MAP_Report_Submenu", 0, 0);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -88,11 +88,11 @@ namespace CopagoAutomation
 			XModeDocking.Checked += XMode_Checked;
 
 			// ABC Speicherfelder automatisch speichern, wenn der Nutzer manuell tippt
-			AbcBaseFolder.LostFocus += AbcStorageFields_LostFocus;
+			// AbcBaseFolder.LostFocus += AbcStorageFields_LostFocus; // Nicht mehr direkt editierbar
 			AbcSammelordner.LostFocus += AbcStorageFields_LostFocus;
 
 			// X-Liste Speicherfelder automatisch speichern, wenn der Nutzer manuell tippt
-			XBaseFolder.LostFocus += XStorageFields_LostFocus;
+			// XBaseFolder.LostFocus += XStorageFields_LostFocus; // Nicht mehr direkt editierbar
 			XSammelordner.LostFocus += XStorageFields_LostFocus;
 
 			LoadPosEntries();
@@ -139,7 +139,7 @@ namespace CopagoAutomation
 
 		private void MainWindow_Closed(object? sender, EventArgs e)
 		{
-			UnregisterCalibrationHotkeys();
+			UnregisterHotkeys();
 
 			if (_hwndSource != null)
 			{
@@ -253,15 +253,12 @@ namespace CopagoAutomation
 				int normalId = HOTKEY_ID_DIGIT_0 + digit;
 				int numpadId = HOTKEY_ID_NUMPAD_0 + digit;
 
-				uint normalVk = (uint)(0x30 + digit);
-				uint numpadVk = (uint)(0x60 + digit);
-
 				RegisterHotKey(handle, normalId, MOD_CONTROL | MOD_ALT, normalVk);
 				RegisterHotKey(handle, numpadId, MOD_CONTROL | MOD_ALT, numpadVk);
 			}
 		}
 
-		private void UnregisterCalibrationHotkeys()
+		private void UnregisterHotkeys()
 		{
 			IntPtr handle = new WindowInteropHelper(this).Handle;
 			if (handle == IntPtr.Zero)
@@ -540,10 +537,10 @@ namespace CopagoAutomation
 			if (_settings == null)
 				_settings = new AppSettings();
 
-			if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
+			if (AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
 				return;
 
-			AbcBaseFolder.Text = _settings.AbcBaseFolder ?? string.Empty;
+			// AbcBaseFolder wird nicht mehr direkt in der UI angezeigt oder bearbeitet
 			AbcSammelordner.Text = _settings.AbcSammelordnerPath ?? string.Empty;
 
 			AbcSaveModeSemco.IsChecked = _settings.AbcSaveMode == SaveMode.SemcoUpload;
@@ -555,10 +552,10 @@ namespace CopagoAutomation
 			if (_settings == null)
 				_settings = new AppSettings();
 
-			if (XBaseFolder == null || XSammelordner == null || XSaveModeSemco == null || XSaveModeAlt == null)
+			if (XSammelordner == null || XSaveModeSemco == null || XSaveModeAlt == null)
 				return;
 
-			XBaseFolder.Text = _settings.XBaseFolder ?? string.Empty;
+			// XBaseFolder wird nicht mehr direkt in der UI angezeigt oder bearbeitet
 			XSammelordner.Text = _settings.XSammelordnerPath ?? string.Empty;
 
 			XSaveModeSemco.IsChecked = _settings.XSaveMode == SaveMode.SemcoUpload;
@@ -570,14 +567,14 @@ namespace CopagoAutomation
 			if (_settings == null)
 				_settings = new AppSettings();
 
-			if (AbcSaveModeAlt == null || AbcBaseFolder == null || AbcSammelordner == null)
+			if (AbcSaveModeAlt == null || AbcSammelordner == null)
 				return;
 
 			_settings.AbcSaveMode = AbcSaveModeAlt.IsChecked == true
 				? SaveMode.Alternativ
 				: SaveMode.SemcoUpload;
 
-			_settings.AbcBaseFolder = AbcBaseFolder.Text?.Trim();
+			// AbcBaseFolder wird nicht mehr direkt aus der UI gelesen, da es nicht mehr editierbar ist
 			_settings.AbcSammelordnerPath = AbcSammelordner.Text?.Trim();
 
 			await SaveSettingsAsync();
@@ -588,14 +585,14 @@ namespace CopagoAutomation
 			if (_settings == null)
 				_settings = new AppSettings();
 
-			if (XSaveModeAlt == null || XBaseFolder == null || XSammelordner == null)
+			if (XSaveModeAlt == null || XSammelordner == null)
 				return;
 
 			_settings.XSaveMode = XSaveModeAlt.IsChecked == true
 				? SaveMode.Alternativ
 				: SaveMode.SemcoUpload;
 
-			_settings.XBaseFolder = XBaseFolder.Text?.Trim();
+			// XBaseFolder wird nicht mehr direkt aus der UI gelesen, da es nicht mehr editierbar ist
 			_settings.XSammelordnerPath = XSammelordner.Text?.Trim();
 
 			await SaveSettingsAsync();
@@ -603,21 +600,23 @@ namespace CopagoAutomation
 
 		private void UpdateAbcSaveModeUi()
 		{
-			if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
+			if (AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
 				return;
 
 			bool isSemco = AbcSaveModeSemco.IsChecked == true;
-			AbcBaseFolder.IsEnabled = isSemco;
+			// AbcBaseFolder ist im Semco-Modus nicht mehr direkt in der UI editierbar
+			// AbcSammelordner ist nur im Alternativ-Modus editierbar
 			AbcSammelordner.IsEnabled = !isSemco;
 		}
 
 		private void UpdateXSaveModeUi()
 		{
-			if (XBaseFolder == null || XSammelordner == null || XSaveModeSemco == null || XSaveModeAlt == null)
+			if (XSammelordner == null || XSaveModeSemco == null || XSaveModeAlt == null)
 				return;
 
 			bool isSemco = XSaveModeSemco.IsChecked == true;
-			XBaseFolder.IsEnabled = isSemco;
+			// XBaseFolder ist im Semco-Modus nicht mehr direkt in der UI editierbar
+			// XSammelordner ist nur im Alternativ-Modus editierbar
 			XSammelordner.IsEnabled = !isSemco;
 		}
 
@@ -688,39 +687,7 @@ namespace CopagoAutomation
 			LogAbc("Der alte Button 'Mauspunkt übernehmen' wird für den neuen Dialog-Workflow nicht mehr verwendet.");
 		}
 
-		private async void AbcBrowse_Click(object sender, RoutedEventArgs e)
-		{
-			string currentPath = AbcBaseFolder.Text?.Trim() ?? string.Empty;
-			string? selectedFolder = BrowseForFolder(currentPath);
-
-			if (!string.IsNullOrWhiteSpace(selectedFolder))
-			{
-				AbcBaseFolder.Text = selectedFolder;
-				await SaveAbcStorageSettingsFromUiAsync();
-				LogAbc($"Basisordner gewählt: {selectedFolder}");
-			}
-			else
-			{
-				LogAbc("Browse (ABC Basisordner) abgebrochen.");
-			}
-		}
-
-		private async void AbcBrowseSammelordner_Click(object sender, RoutedEventArgs e)
-		{
-			string currentPath = AbcSammelordner.Text?.Trim() ?? string.Empty;
-			string? selectedFolder = BrowseForFolder(currentPath);
-
-			if (!string.IsNullOrWhiteSpace(selectedFolder))
-			{
-				AbcSammelordner.Text = selectedFolder;
-				await SaveAbcStorageSettingsFromUiAsync();
-				LogAbc($"Alternativer Ordner gewählt: {selectedFolder}");
-			}
-			else
-			{
-				LogAbc("Browse (ABC Alternativ-Ordner) abgebrochen.");
-			}
-		}
+		// AbcBrowse_Click und AbcBrowseSammelordner_Click wurden entfernt, da sie im Semco-Modus nicht mehr benötigt werden
 
 		private void AbcResetPos_Click(object sender, RoutedEventArgs e)
 		{
@@ -795,39 +762,7 @@ namespace CopagoAutomation
 			LogX("Der alte Button 'Mauspunkt übernehmen' wird für den neuen Dialog-Workflow nicht mehr verwendet.");
 		}
 
-		private async void XBrowse_Click(object sender, RoutedEventArgs e)
-		{
-			string currentPath = XBaseFolder.Text?.Trim() ?? string.Empty;
-			string? selectedFolder = BrowseForFolder(currentPath);
-
-			if (!string.IsNullOrWhiteSpace(selectedFolder))
-			{
-				XBaseFolder.Text = selectedFolder;
-				await SaveXStorageSettingsFromUiAsync();
-				LogX($"Basisordner gewählt: {selectedFolder}");
-			}
-			else
-			{
-				LogX("Browse (X-Liste Basisordner) abgebrochen.");
-			}
-		}
-
-		private async void XBrowseSammelordner_Click(object sender, RoutedEventArgs e)
-		{
-			string currentPath = XSammelordner.Text?.Trim() ?? string.Empty;
-			string? selectedFolder = BrowseForFolder(currentPath);
-
-			if (!string.IsNullOrWhiteSpace(selectedFolder))
-			{
-				XSammelordner.Text = selectedFolder;
-				await SaveXStorageSettingsFromUiAsync();
-				LogX($"Alternativer Ordner gewählt: {selectedFolder}");
-			}
-			else
-			{
-				LogX("Browse (X-Liste Alternativ-Ordner) abgebrochen.");
-			}
-		}
+		// XBrowse_Click und XBrowseSammelordner_Click wurden entfernt, da sie im Semco-Modus nicht mehr benötigt werden
 
 		private void XResetPos_Click(object sender, RoutedEventArgs e)
 		{

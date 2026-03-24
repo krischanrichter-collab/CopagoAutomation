@@ -5,10 +5,19 @@ using CopagoAutomation.Calibration;
 
 namespace CopagoAutomation.ViewModels
 {
-	internal class MainViewModel : INotifyPropertyChanged
+	public class MainViewModel : INotifyPropertyChanged
 	{
 		private readonly CalibrationService _calibrationService;
 		private CalibrationRunner? _calibrationRunner;
+
+		public MainViewModel(CalibrationService calibrationService)
+		{
+			_calibrationService = calibrationService
+				?? throw new ArgumentNullException(nameof(calibrationService));
+		}
+
+		public event PropertyChangedEventHandler? PropertyChanged;
+
 		public CalibrationRunner? CalibrationRunner => _calibrationRunner;
 		public int CurrentCalibrationStepIndex
 		{
@@ -26,14 +35,6 @@ namespace CopagoAutomation.ViewModels
 		private int _lastCapturedX;
 		private int _lastCapturedY;
 
-		public MainViewModel(CalibrationService calibrationService)
-		{
-			_calibrationService = calibrationService
-				?? throw new ArgumentNullException(nameof(calibrationService));
-		}
-
-		public event PropertyChangedEventHandler? PropertyChanged;
-
 		public string CurrentCalibrationModeName => _currentCalibrationModeName;
 
 		public string CurrentCalibrationProfileName => _calibrationRunner?.ProfileName ?? string.Empty;
@@ -42,9 +43,9 @@ namespace CopagoAutomation.ViewModels
 
 		public string CurrentCalibrationTitle => CurrentCalibrationStep?.Title ?? string.Empty;
 
-		public string CurrentCalibrationHotkeyText => CurrentCalibrationStep?.HotkeyText ?? string.Empty;
-
 		public string CurrentCalibrationInstructionText => CurrentCalibrationStep?.InstructionText ?? string.Empty;
+
+		public string CurrentCalibrationHotkeyText => CurrentCalibrationStep?.HotkeyText ?? string.Empty;
 
 		public bool IsCalibrationRunning => _calibrationRunner != null && !_calibrationRunner.IsFinished;
 
@@ -180,8 +181,8 @@ namespace CopagoAutomation.ViewModels
 			OnPropertyChanged(nameof(CurrentCalibrationProfileName));
 			OnPropertyChanged(nameof(CurrentCalibrationStep));
 			OnPropertyChanged(nameof(CurrentCalibrationTitle));
-			OnPropertyChanged(nameof(CurrentCalibrationHotkeyText));
 			OnPropertyChanged(nameof(CurrentCalibrationInstructionText));
+			OnPropertyChanged(nameof(CurrentCalibrationHotkeyText));
 			OnPropertyChanged(nameof(IsCalibrationRunning));
 			OnPropertyChanged(nameof(IsCalibrationFinished));
 			OnPropertyChanged(nameof(HasCurrentCalibrationStep));
@@ -192,7 +193,7 @@ namespace CopagoAutomation.ViewModels
 			OnPropertyChanged(nameof(LastCapturedY));
 		}
 
-		private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+		protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
 		{
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}
