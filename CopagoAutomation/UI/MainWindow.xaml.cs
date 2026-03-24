@@ -591,20 +591,23 @@ namespace CopagoAutomation
 				AbcSaveModeAlt.IsChecked = _settings.SaveMode == SaveMode.Alternativ;
 			}
 
-		private async Task SaveAbcStorageSettingsFromUiAsync()
-		{
-			if (_settings == null)
-				_settings = new AppSettings();
+			private async Task SaveAbcStorageSettingsFromUiAsync()
+			{
+				if (_settings == null)
+					_settings = new AppSettings();
 
-			_settings.SaveMode = AbcSaveModeAlt.IsChecked == true
-				? SaveMode.Alternativ
-				: SaveMode.SemcoUpload;
+				if (AbcSaveModeAlt == null || AbcBaseFolder == null || AbcSammelordner == null)
+					return;
 
-			_settings.BaseFolder = AbcBaseFolder.Text?.Trim();
-			_settings.SammelordnerPath = AbcSammelordner.Text?.Trim();
+				_settings.SaveMode = AbcSaveModeAlt.IsChecked == true
+					? SaveMode.Alternativ
+					: SaveMode.SemcoUpload;
 
-			await SaveSettingsAsync();
-		}
+				_settings.BaseFolder = AbcBaseFolder.Text?.Trim();
+				_settings.SammelordnerPath = AbcSammelordner.Text?.Trim();
+
+				await SaveSettingsAsync();
+			}
 
 			private void UpdateAbcSaveModeUi()
 			{
@@ -616,19 +619,22 @@ namespace CopagoAutomation
 				AbcSammelordner.IsEnabled = !isSemco;
 			}
 
-		private async void AbcSaveModeChanged(object sender, RoutedEventArgs e)
-		{
-			if (_settings == null)
-				_settings = new AppSettings();
+			private async void AbcSaveModeChanged(object sender, RoutedEventArgs e)
+			{
+				if (_settings == null)
+					_settings = new AppSettings();
 
-			UpdateAbcSaveModeUi();
-			await SaveAbcStorageSettingsFromUiAsync();
+				if (AbcSaveModeSemco == null || AbcSaveModeAlt == null)
+					return;
 
-			if (AbcSaveModeSemco.IsChecked == true)
-				LogAbc("Speicher-Modus: Semco Upload");
-			else
-				LogAbc("Speicher-Modus: Alternativer Ordner");
-		}
+				UpdateAbcSaveModeUi();
+				await SaveAbcStorageSettingsFromUiAsync();
+
+				if (AbcSaveModeSemco.IsChecked == true)
+					LogAbc("Speicher-Modus: Semco Upload");
+				else
+					LogAbc("Speicher-Modus: Alternativer Ordner");
+			}
 
 		private async void AbcStorageFields_LostFocus(object sender, RoutedEventArgs e)
 		{
