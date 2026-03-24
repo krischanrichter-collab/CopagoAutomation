@@ -1,11 +1,14 @@
 using System;
 using System.Windows;
 using System.Windows.Input;
+using CopagoAutomation.ViewModels;
 
 namespace CopagoAutomation.Windows
 {
 	public partial class CalibrationPromptWindow : Window, IDisposable
 	{
+		private readonly MainViewModel _viewModel;
+
 		public string StepTitle
 		{
 			get => StepTitleText.Text;
@@ -34,9 +37,12 @@ namespace CopagoAutomation.Windows
 
 		public bool WasCancelled { get; private set; }
 
-		public CalibrationPromptWindow()
+		public CalibrationPromptWindow(Window owner, MainViewModel viewModel)
 		{
 			InitializeComponent();
+			Owner = owner;
+			_viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+			DataContext = _viewModel;
 
 			Loaded += CalibrationPromptWindow_Loaded;
 
@@ -91,7 +97,7 @@ namespace CopagoAutomation.Windows
 
 		private void OkButton_Click(object sender, RoutedEventArgs e)
 		{
-			if (!HasCapturedPosition)
+			if (!_viewModel.HasLastCapturedPosition)
 			{
 				MessageBox.Show(
 					"Bitte zuerst die angezeigte Tastenkombination drücken, um die Mausposition zu übernehmen.",

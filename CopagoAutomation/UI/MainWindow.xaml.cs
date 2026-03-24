@@ -545,14 +545,14 @@ namespace CopagoAutomation
 
         private void LogAbc(string message)
         {
-            AbcLogTextBox.AppendText($"{DateTime.Now:HH:mm:ss} {message}\n");
-            AbcLogTextBox.ScrollToEnd();
+            AbcLogBox.AppendText($"{DateTime.Now:HH:mm:ss} {message}\n");
+            AbcLogBox.ScrollToEnd();
         }
 
         private void LogX(string message)
         {
-            XLogTextBox.AppendText($"{DateTime.Now:HH:mm:ss} {message}\n");
-            XLogTextBox.ScrollToEnd();
+            XLogBox.AppendText($"{DateTime.Now:HH:mm:ss} {message}\n");
+            XLogBox.ScrollToEnd();
         }
 
         private void AbcCalibrate_Click(object sender, RoutedEventArgs e)
@@ -562,13 +562,13 @@ namespace CopagoAutomation
             string modeName = GetCalibrationModeName(_settings?.AbcMode ?? MachineMode.Laptop);
             _mainViewModel.StartCalibration(modeName, "AbcReport");
 
-            _activeCalibrationPrompt = new CalibrationPromptWindow(_mainViewModel);
+            _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
             _activeCalibrationPrompt.Owner = this;
             _activeCalibrationPrompt.ShowDialog();
 
             if (_mainViewModel.IsCalibrationFinished)
             {
-                SaveCalibrationDataAsync();
+                await SaveCalibrationDataAsync();
                 MessageBox.Show("Kalibrierung abgeschlossen und gespeichert.", "Kalibrierung", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
@@ -584,13 +584,13 @@ namespace CopagoAutomation
             string modeName = GetCalibrationModeName(_settings?.XMode ?? MachineMode.Laptop);
             _mainViewModel.StartCalibration(modeName, "XReport");
 
-            _activeCalibrationPrompt = new CalibrationPromptWindow(_mainViewModel);
+            _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
             _activeCalibrationPrompt.Owner = this;
             _activeCalibrationPrompt.ShowDialog();
 
             if (_mainViewModel.IsCalibrationFinished)
             {
-                SaveCalibrationDataAsync();
+                await SaveCalibrationDataAsync();
                 MessageBox.Show("Kalibrierung abgeschlossen und gespeichert.", "Kalibrierung", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
