@@ -172,7 +172,7 @@ namespace CopagoAutomation
             return mode == MachineMode.Laptop ? "laptop" : "dock";
         }
 
-        private bool TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow)
+        private bool TryGetCurrentClientCursorPosition(out int x, out int y, out WindowAutomation.BoundWindowInfo? boundCopagoWindow)
         {
             x = 0;
             y = 0;
@@ -286,7 +286,7 @@ namespace CopagoAutomation
 
             if (digit == 0)
             {
-                if (TryGetCurrentClientCursorPosition(out int x, out int y, out var boundWindow))
+                if (TryGetCurrentClientCursorPosition(out int x, out int y, out WindowAutomation.BoundWindowInfo? boundWindow))
                 {
                     _mainViewModel.SetLastCapturedPosition(x, y, boundWindow);
                 }
@@ -311,233 +311,292 @@ namespace CopagoAutomation
 
         private void ApplyStorageSettingsToUi()
         {
-            if (_settings == null)
-                return;
+            if (_settings == null) return;
+
+            if (AbcSaveModeSemco != null && AbcSaveModeAlt != null)
+            {
+                if (_settings.AbcSaveMode == SaveMode.SemcoUpload)
+                    AbcSaveModeSemco.IsChecked = true;
+                else
+                    AbcSaveModeAlt.IsChecked = true;
+            }
+
+            if (XSaveModeSemco != null && XSaveModeAlt != null)
+            {
+                if (_settings.XSaveMode == SaveMode.SemcoUpload)
+                    XSaveModeSemco.IsChecked = true;
+                else
+                    XSaveModeAlt.IsChecked = true;
+            }
 
             if (AbcSammelordner != null)
-                AbcSammelordner.Text = _settings.AbcSammelordnerPath;
-
-            if (_settings.AbcSaveMode == SaveMode.Semco)
-                AbcSaveModeSemco.IsChecked = true;
-            else
-                AbcSaveModeAlt.IsChecked = true;
+                AbcSammelordner.Text = _settings.AbcSammelordnerPath ?? string.Empty;
+            if (XSammelordner != null)
+                XSammelordner.Text = _settings.XSammelordnerPath ?? string.Empty;
         }
 
         private void UpdateAbcSaveModeUi()
         {
-            bool isAltMode = AbcSaveModeAlt.IsChecked == true;
+            if (_settings == null) return;
+
+            bool isAlternativeMode = _settings.AbcSaveMode == SaveMode.Alternative;
 
             if (AbcSammelordner != null)
-                AbcSammelordner.IsEnabled = isAltMode;
+                AbcSammelordner.IsEnabled = isAlternativeMode;
             if (AbcBrowseSammelordner != null)
-                AbcBrowseSammelordner.IsEnabled = isAltMode;
+                AbcBrowseSammelordner.IsEnabled = isAlternativeMode;
+        }
+
+        private void UpdateXSaveModeUi()
+        {
+            if (_settings == null) return;
+
+            bool isAlternativeMode = _settings.XSaveMode == SaveMode.Alternative;
+
+            if (XSammelordner != null)
+                XSammelordner.IsEnabled = isAlternativeMode;
+            if (XBrowseSammelordner != null)
+                XBrowseSammelordner.IsEnabled = isAlternativeMode;
         }
 
         private async void AbcMode_Checked(object sender, RoutedEventArgs e)
         {
-            if (_settings == null)
-                return;
+            if (_settings == null) return;
 
-            if (AbcModeLaptop.IsChecked == true)
+            if (AbcModeLaptop != null && AbcModeLaptop.IsChecked == true)
                 _settings.AbcMode = MachineMode.Laptop;
-            else
+            else if (AbcModeDocking != null && AbcModeDocking.IsChecked == true)
                 _settings.AbcMode = MachineMode.Docking;
+
+            await SaveSettingsAsync();
+        }
+
+        private async void XMode_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+
+            if (XModeLaptop != null && XModeLaptop.IsChecked == true)
+                _settings.XMode = MachineMode.Laptop;
+            else if (XModeDocking != null && XModeDocking.IsChecked == true)
+                _settings.XMode = MachineMode.Docking;
 
             await SaveSettingsAsync();
         }
 
         private async void AbcSaveModeChanged(object sender, RoutedEventArgs e)
         {
-            await SaveAbcStorageSettingsFromUiAsync();
-            UpdateAbcSaveModeUi();
-        }
+            if (_settings == null) return;
 
-        private async void AbcStorageFields_LostFocus(object sender, RoutedEventArgs e)
-        {
-            await SaveAbcStorageSettingsFromUiAsync();
-        }
-
-        private async Task SaveAbcStorageSettingsFromUiAsync()
-        {
-            if (_settings == null)
-                return;
-
-            if (AbcSaveModeSemco.IsChecked == true)
-                _settings.AbcSaveMode = SaveMode.Semco;
-            else
+            if (AbcSaveModeSemco != null && AbcSaveModeSemco.IsChecked == true)
+                _settings.AbcSaveMode = SaveMode.SemcoUpload;
+            else if (AbcSaveModeAlt != null && AbcSaveModeAlt.IsChecked == true)
                 _settings.AbcSaveMode = SaveMode.Alternative;
 
-            if (AbcSammelordner != null)
-                _settings.AbcSammelordnerPath = AbcSammelordner.Text;
-
-            await SaveSettingsAsync();
-        }
-
-        private async void AbcBrowseSammelordner_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new OpenFolderDialog();
-            if (dialog.ShowDialog() == true)
-            {
-                AbcSammelordner.Text = dialog.FolderName;
-                await SaveAbcStorageSettingsFromUiAsync();
-            }
-        }
-
-        private async void AbcStart_Click(object sender, RoutedEventArgs e)
-        {
-            if (_automationService == null || _settings == null)
-                return;
-
-            var selectedPos = AbcPosList.SelectedItems.Cast<string>().ToList();
-
-            var request = new AbcStartRequest
-            {
-                DateFrom = AbcDateRuleSelector.DateFrom,
-                DateTo = AbcDateRuleSelector.DateTo,
-                SelectedPosValues = selectedPos,
-                BaseFolder = _settings.AbcBaseFolder, // This will be handled by PathResolver
-                SaveMode = _settings.AbcSaveMode
-            };
-
-            var logs = await Task.Run(() => _automationService.StartAbcAutomation(request, GetCalibrationModeName(_settings.AbcMode)));
-
-            LogAbc.Text = string.Join("\n", logs);
-        }
-
-        private async void AbcCalibrate_Click(object sender, RoutedEventArgs e)
-        {
-            if (_mainViewModel == null || _settings == null)
-                return;
-
-            string profileName = "abc";
-            string modeName = GetCalibrationModeName(_settings.AbcMode);
-
-            _mainViewModel.StartCalibration(profileName, modeName);
-
-            using (_activeCalibrationPrompt = new CalibrationPromptWindow(_mainViewModel))
-            {
-                _activeCalibrationPrompt.Owner = this;
-                _activeCalibrationPrompt.ShowDialog();
-            }
-
-            await SaveCalibrationDataAsync();
-            LogAbc.Text = "Kalibrierung für ABC abgeschlossen.";
-        }
-
-        private void ApplyXStorageSettingsToUi()
-        {
-            if (_settings == null)
-                return;
-
-            if (XSammelordner != null)
-                XSammelordner.Text = _settings.XSammelordnerPath;
-
-            if (_settings.XSaveMode == SaveMode.Semco)
-                XSaveModeSemco.IsChecked = true;
-            else
-                XSaveModeAlt.IsChecked = true;
-        }
-
-        private void UpdateXSaveModeUi()
-        {
-            bool isAltMode = XSaveModeAlt.IsChecked == true;
-
-            if (XSammelordner != null)
-                XSammelordner.IsEnabled = isAltMode;
-            if (XBrowseSammelordner != null)
-                XBrowseSammelordner.IsEnabled = isAltMode;
-        }
-
-        private async void XMode_Checked(object sender, RoutedEventArgs e)
-        {
-            if (_settings == null)
-                return;
-
-            if (XModeLaptop.IsChecked == true)
-                _settings.XMode = MachineMode.Laptop;
-            else
-                _settings.XMode = MachineMode.Docking;
-
+            UpdateAbcSaveModeUi();
             await SaveSettingsAsync();
         }
 
         private async void XSaveModeChanged(object sender, RoutedEventArgs e)
         {
-            await SaveXStorageSettingsFromUiAsync();
-            UpdateXSaveModeUi();
-        }
+            if (_settings == null) return;
 
-        private async void XStorageFields_LostFocus(object sender, RoutedEventArgs e)
-        {
-            await SaveXStorageSettingsFromUiAsync();
-        }
-
-        private async Task SaveXStorageSettingsFromUiAsync()
-        {
-            if (_settings == null)
-                return;
-
-            if (XSaveModeSemco.IsChecked == true)
-                _settings.XSaveMode = SaveMode.Semco;
-            else
+            if (XSaveModeSemco != null && XSaveModeSemco.IsChecked == true)
+                _settings.XSaveMode = SaveMode.SemcoUpload;
+            else if (XSaveModeAlt != null && XSaveModeAlt.IsChecked == true)
                 _settings.XSaveMode = SaveMode.Alternative;
 
-            if (XSammelordner != null)
-                _settings.XSammelordnerPath = XSammelordner.Text;
-
+            UpdateXSaveModeUi();
             await SaveSettingsAsync();
+        }
+
+        private async void AbcBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+
+            var dialog = new OpenFolderDialog
+            {
+                Title = "Sammelordner für ABC-Berichte auswählen",
+                InitialDirectory = _settings.AbcSammelordnerPath ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                _settings.AbcSammelordnerPath = dialog.FolderName;
+                if (AbcSammelordner != null)
+                    AbcSammelordner.Text = dialog.FolderName;
+                await SaveSettingsAsync();
+            }
         }
 
         private async void XBrowseSammelordner_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFolderDialog();
+            if (_settings == null) return;
+
+            var dialog = new OpenFolderDialog
+            {
+                Title = "Sammelordner für X-Berichte auswählen",
+                InitialDirectory = _settings.XSammelordnerPath ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+            };
+
             if (dialog.ShowDialog() == true)
             {
-                XSammelordner.Text = dialog.FolderName;
-                await SaveXStorageSettingsFromUiAsync();
+                _settings.XSammelordnerPath = dialog.FolderName;
+                if (XSammelordner != null)
+                    XSammelordner.Text = dialog.FolderName;
+                await SaveSettingsAsync();
+            }
+        }
+
+        private async void AbcStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+
+            _settings.AbcSammelordnerPath = AbcSammelordner.Text;
+            await SaveSettingsAsync();
+        }
+
+        private async void XStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+
+            _settings.XSammelordnerPath = XSammelordner.Text;
+            await SaveSettingsAsync();
+        }
+
+        private async void AbcStart_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mainViewModel == null || _automationService == null || _settings == null) return;
+
+            string? selectedPos = AbcPosList.SelectedItem as string;
+            if (string.IsNullOrWhiteSpace(selectedPos))
+            {
+                MessageBox.Show("Bitte wählen Sie eine POS aus.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (!AbcDateRuleSelector.DateFrom.HasValue || !AbcDateRuleSelector.DateTo.HasValue)
+            {
+                MessageBox.Show("Bitte wählen Sie einen Datumsbereich aus.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            LogAbc($"Starte ABC-Automatisierung für POS {selectedPos} von {AbcDateRuleSelector.DateFrom.Value:d} bis {AbcDateRuleSelector.DateTo.Value:d}...");
+
+            var request = new AbcStartRequest
+            {
+                PosId = selectedPos,
+                DateFrom = AbcDateRuleSelector.DateFrom.Value,
+                DateTo = AbcDateRuleSelector.DateTo.Value,
+                SaveMode = _settings.AbcSaveMode,
+                SammelordnerPath = _settings.AbcSammelordnerPath
+            };
+
+            try
+            {
+                await _automationService.StartAbcAutomationAsync(request);
+                LogAbc("ABC-Automatisierung abgeschlossen.");
+            }
+            catch (Exception ex)
+            {
+                LogAbc($"Fehler bei ABC-Automatisierung: {ex.Message}");
+                MessageBox.Show($"Fehler bei ABC-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         private async void XStart_Click(object sender, RoutedEventArgs e)
         {
-            if (_automationService == null || _settings == null)
-                return;
+            if (_mainViewModel == null || _automationService == null || _settings == null) return;
 
-            var selectedPos = XPosList.SelectedItems.Cast<string>().ToList();
+            string? selectedPos = XPosList.SelectedItem as string;
+            if (string.IsNullOrWhiteSpace(selectedPos))
+            {
+                MessageBox.Show("Bitte wählen Sie eine POS aus.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (!XDateRuleSelector.DateFrom.HasValue || !XDateRuleSelector.DateTo.HasValue)
+            {
+                MessageBox.Show("Bitte wählen Sie einen Datumsbereich aus.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            LogX($"Starte X-Automatisierung für POS {selectedPos} von {XDateRuleSelector.DateFrom.Value:d} bis {XDateRuleSelector.DateTo.Value:d}...");
 
             var request = new XStartRequest
             {
-                Year = int.Parse(XYear.Text),
-                ToWeek = int.Parse(XToWeek.Text),
-                CumPercent = int.Parse(XCumPercent.Text),
-                SelectedPosValues = selectedPos,
-                BaseFolder = _settings.XBaseFolder, // This will be handled by PathResolver
-                SaveMode = _settings.XSaveMode
+                PosId = selectedPos,
+                DateFrom = XDateRuleSelector.DateFrom.Value,
+                DateTo = XDateRuleSelector.DateTo.Value,
+                SaveMode = _settings.XSaveMode,
+                SammelordnerPath = _settings.XSammelordnerPath
             };
 
-            var logs = await Task.Run(() => _automationService.StartXAutomation(request, GetCalibrationModeName(_settings.XMode)));
-
-            LogX.Text = string.Join("\n", logs);
+            try
+            {
+                await _automationService.StartXAutomationAsync(request);
+                LogX("X-Automatisierung abgeschlossen.");
+            }
+            catch (Exception ex)
+            {
+                LogX($"Fehler bei X-Automatisierung: {ex.Message}");
+                MessageBox.Show($"Fehler bei X-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private async void XCalibrate_Click(object sender, RoutedEventArgs e)
+        private void LogAbc(string message)
         {
-            if (_mainViewModel == null || _settings == null)
-                return;
+            AbcLogTextBox.AppendText($"{DateTime.Now:HH:mm:ss} {message}\n");
+            AbcLogTextBox.ScrollToEnd();
+        }
 
-            string profileName = "xlist";
-            string modeName = GetCalibrationModeName(_settings.XMode);
+        private void LogX(string message)
+        {
+            XLogTextBox.AppendText($"{DateTime.Now:HH:mm:ss} {message}\n");
+            XLogTextBox.ScrollToEnd();
+        }
 
-            _mainViewModel.StartCalibration(profileName, modeName);
+        private void AbcCalibrate_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mainViewModel == null) return;
 
-            using (_activeCalibrationPrompt = new CalibrationPromptWindow(_mainViewModel))
+            string modeName = GetCalibrationModeName(_settings?.AbcMode ?? MachineMode.Laptop);
+            _mainViewModel.StartCalibration(modeName, "AbcReport");
+
+            _activeCalibrationPrompt = new CalibrationPromptWindow(_mainViewModel);
+            _activeCalibrationPrompt.Owner = this;
+            _activeCalibrationPrompt.ShowDialog();
+
+            if (_mainViewModel.IsCalibrationFinished)
             {
-                _activeCalibrationPrompt.Owner = this;
-                _activeCalibrationPrompt.ShowDialog();
+                SaveCalibrationDataAsync();
+                MessageBox.Show("Kalibrierung abgeschlossen und gespeichert.", "Kalibrierung", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+            else
+            {
+                MessageBox.Show("Kalibrierung abgebrochen.", "Kalibrierung", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
 
-            await SaveCalibrationDataAsync();
-            LogX.Text = "Kalibrierung für X-Liste abgeschlossen.";
+        private void XCalibrate_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mainViewModel == null) return;
+
+            string modeName = GetCalibrationModeName(_settings?.XMode ?? MachineMode.Laptop);
+            _mainViewModel.StartCalibration(modeName, "XReport");
+
+            _activeCalibrationPrompt = new CalibrationPromptWindow(_mainViewModel);
+            _activeCalibrationPrompt.Owner = this;
+            _activeCalibrationPrompt.ShowDialog();
+
+            if (_mainViewModel.IsCalibrationFinished)
+            {
+                SaveCalibrationDataAsync();
+                MessageBox.Show("Kalibrierung abgeschlossen und gespeichert.", "Kalibrierung", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Kalibrierung abgebrochen.", "Kalibrierung", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
     }
 }
