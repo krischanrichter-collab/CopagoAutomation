@@ -253,6 +253,9 @@ namespace CopagoAutomation
 				int normalId = HOTKEY_ID_DIGIT_0 + digit;
 				int numpadId = HOTKEY_ID_NUMPAD_0 + digit;
 
+				uint normalVk = (uint)(0x30 + digit);
+				uint numpadVk = (uint)(0x60 + digit);
+
 				RegisterHotKey(handle, normalId, MOD_CONTROL | MOD_ALT, normalVk);
 				RegisterHotKey(handle, numpadId, MOD_CONTROL | MOD_ALT, numpadVk);
 			}

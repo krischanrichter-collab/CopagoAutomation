@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CopagoAutomation.Calibration
 {
-	class CalibrationRunner
+	public class CalibrationRunner
 	{
 		private readonly List<CalibrationStepDefinition> _steps;
 
