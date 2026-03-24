@@ -92,7 +92,7 @@ namespace CopagoAutomation.ViewModels
 			NotifyCalibrationStateChanged();
 		}
 
-		public bool SetLastCapturedPosition(int x, int y)
+		public bool SetLastCapturedPosition(int x, int y, BoundWindowInfo? boundWindow)
 		{
 			if (_calibrationRunner == null || _calibrationRunner.IsFinished)
 				return false;
@@ -111,7 +111,7 @@ namespace CopagoAutomation.ViewModels
 			return true;
 		}
 
-		public bool SaveCurrentCalibrationPoint()
+		public bool SaveCurrentCalibrationPoint(BoundWindowInfo? boundWindow = null)
 		{
 			if (_calibrationRunner == null || _calibrationRunner.IsFinished)
 				return false;
@@ -126,12 +126,13 @@ namespace CopagoAutomation.ViewModels
 			if (string.IsNullOrWhiteSpace(_currentCalibrationModeName))
 				return false;
 
-			_calibrationService.SetPoint(
-				_currentCalibrationModeName,
-				_calibrationRunner.ProfileName,
-				currentStep.Key,
-				_lastCapturedX,
-				_lastCapturedY);
+_calibrationService.SetPoint(
+					_currentCalibrationModeName,
+					_calibrationRunner.ProfileName,
+					currentStep.Key,
+					_lastCapturedX,
+					_lastCapturedY,
+					boundWindow);
 
 			_calibrationRunner.MoveNext();
 			ResetLastCapture();
@@ -140,10 +141,10 @@ namespace CopagoAutomation.ViewModels
 			return true;
 		}
 
-		public void NextStep()
-		{
-			SaveCurrentCalibrationPoint();
-		}
+public void NextStep(BoundWindowInfo? boundWindow = null)
+			{
+				SaveCurrentCalibrationPoint(boundWindow);
+			}
 
 		public void CancelCalibration()
 		{

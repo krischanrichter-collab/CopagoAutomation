@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
+
 using System.Threading;
 using CopagoAutomation.Calibration;
 using CopagoAutomation.Models;
@@ -25,9 +25,8 @@ namespace CopagoAutomation.Automation
 		private const ushort VK_A = 0x41;
 		private const ushort VK_RETURN = 0x0D;
 
-		private readonly WindowAutomation _windowAutomation;
-
 private readonly PathResolver _pathResolver;
+			private readonly WindowAutomation _windowAutomation;
 
 			public AbcAutomation(PathResolver pathResolver)
 				: this(new WindowAutomation(), pathResolver)
@@ -342,7 +341,16 @@ private readonly PathResolver _pathResolver;
 			return false;
 		}
 
-		private static void ClickPoint(CalibrationPoint point)
+		private void ClickPoint(CalibrationPoint point)
+			{
+				float dpiScale = _windowAutomation.GetDpiScaleFactor();
+				int scaledX = (int)(point.X * dpiScale);
+				int scaledY = (int)(point.Y * dpiScale);
+				_windowAutomation.SetCursorPos(scaledX, scaledY);
+				Sleep(60);
+				LeftClick();
+				Sleep(DefaultClickDelayMs);
+			}
 		{
 			SetCursorPos(point.X, point.Y);
 			Sleep(60);
@@ -350,7 +358,7 @@ private readonly PathResolver _pathResolver;
 			Sleep(DefaultClickDelayMs);
 		}
 
-		private static void SelectAll()
+		
 		{
 			KeyDown(VK_CONTROL);
 			Sleep(25);
@@ -360,13 +368,13 @@ private readonly PathResolver _pathResolver;
 			Sleep(60);
 		}
 
-		private static void PressKey(ushort virtualKey)
+		
 		{
 			KeyPress(virtualKey);
 			Sleep(60);
 		}
 
-		private static void TypeText(string text)
+		
 		{
 			if (string.IsNullOrEmpty(text))
 				return;
@@ -378,125 +386,22 @@ private readonly PathResolver _pathResolver;
 			}
 		}
 
-		private static void Sleep(int milliseconds)
+		
 		{
 			Thread.Sleep(milliseconds);
 		}
 
-		private static void LeftClick()
-		{
-			var inputs = new INPUT[2];
 
-			inputs[0] = new INPUT
-			{
-				type = INPUT_MOUSE,
-				U = new InputUnion
-				{
-					mi = new MOUSEINPUT
-					{
-						dwFlags = MOUSEEVENTF_LEFTDOWN
-					}
-				}
-			};
 
-			inputs[1] = new INPUT
-			{
-				type = INPUT_MOUSE,
-				U = new InputUnion
-				{
-					mi = new MOUSEINPUT
-					{
-						dwFlags = MOUSEEVENTF_LEFTUP
-					}
-				}
-			};
 
-			SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-		}
 
-		private static void KeyPress(ushort virtualKey)
-		{
-			KeyDown(virtualKey);
-			Sleep(20);
-			KeyUp(virtualKey);
-		}
 
-		private static void KeyDown(ushort virtualKey)
-		{
-			var input = new INPUT
-			{
-				type = INPUT_KEYBOARD,
-				U = new InputUnion
-				{
-					ki = new KEYBDINPUT
-					{
-						wVk = virtualKey,
-						dwFlags = 0
-					}
-				}
-			};
 
-			SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
-		}
 
-		private static void KeyUp(ushort virtualKey)
-		{
-			var input = new INPUT
-			{
-				type = INPUT_KEYBOARD,
-				U = new InputUnion
-				{
-					ki = new KEYBDINPUT
-					{
-						wVk = virtualKey,
-						dwFlags = KEYEVENTF_KEYUP
-					}
-				}
-			};
 
-			SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
-		}
 
-		private static void SendUnicodeChar(char ch)
-		{
-			var keyDown = new INPUT
-			{
-				type = INPUT_KEYBOARD,
-				U = new InputUnion
-				{
-					ki = new KEYBDINPUT
-					{
-						wScan = ch,
-						dwFlags = KEYEVENTF_UNICODE
-					}
-				}
-			};
 
-			var keyUp = new INPUT
-			{
-				type = INPUT_KEYBOARD,
-				U = new InputUnion
-				{
-					ki = new KEYBDINPUT
-					{
-						wScan = ch,
-						dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
-					}
-				}
-			};
 
-			var inputs = new[] { keyDown, keyUp };
-			SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-		}
-
-		private const int INPUT_MOUSE = 0;
-		private const int INPUT_KEYBOARD = 1;
-
-		private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
-		private const uint MOUSEEVENTF_LEFTUP = 0x0004;
-
-		private const uint KEYEVENTF_KEYUP = 0x0002;
-		private const uint KEYEVENTF_UNICODE = 0x0004;
 
 		[DllImport("user32.dll", SetLastError = true)]
 		private static extern bool SetCursorPos(int x, int y);

@@ -2,6 +2,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
+using System.Windows.Forms;
+
 namespace CopagoAutomation.Automation
 {
 	public class WindowAutomation
@@ -10,6 +12,18 @@ namespace CopagoAutomation.Automation
 
 		private const int DefaultWindowTextCapacity = 512;
 		private const int SW_RESTORE = 9;
+
+			[DllImport("user32.dll")]
+			private static extern IntPtr GetDC(IntPtr hWnd);
+
+			[DllImport("user32.dll")]
+			private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+			[DllImport("gdi32.dll")]
+			private static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
+
+			private const int LOGPIXELSX = 88;
+			private const int LOGPIXELSY = 90;
 
 		[DllImport("user32.dll")]
 		private static extern IntPtr GetForegroundWindow();
@@ -41,7 +55,389 @@ namespace CopagoAutomation.Automation
 		[DllImport("user32.dll")]
 		private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
-		public IntPtr GetActiveWindowHandle()
+			[DllImport("user32.dll")]
+			private static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
+
+			[DllImport("user32.dll")]
+			private static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+
+			[DllImport("user32.dll")]
+			private static extern void SetCursorPos(int x, int y);
+
+			[DllImport("user32.dll")]
+			private static extern void SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+			private const int INPUT_MOUSE = 0;
+			private const int INPUT_KEYBOARD = 1;
+
+			private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+			private const uint MOUSEEVENTF_LEFTUP = 0x0004;
+
+			private const uint KEYEVENTF_KEYUP = 0x0002;
+			private const uint KEYEVENTF_UNICODE = 0x0004;
+
+			private const ushort VK_CONTROL = 0x11;
+			private const ushort VK_A = 0x41;
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct INPUT
+			{
+				public int type;
+				public InputUnion U;
+			}
+
+			[StructLayout(LayoutKind.Explicit)]
+			private struct InputUnion
+			{
+				[FieldOffset(0)]
+				public MOUSEINPUT mi;
+				[FieldOffset(0)]
+				public KEYBDINPUT ki;
+				[FieldOffset(0)]
+				public HARDWAREINPUT hi;
+			}
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct MOUSEINPUT
+			{
+				public int dx;
+				public int dy;
+				public uint mouseData;
+				public uint dwFlags;
+				public uint time;
+				public IntPtr dwExtraInfo;
+			}
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct KEYBDINPUT
+			{
+				public ushort wVk;
+				public ushort wScan;
+				public uint dwFlags;
+				public uint time;
+				public IntPtr dwExtraInfo;
+			}
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct HARDWAREINPUT
+			{
+				public uint uMsg;
+				public ushort wParamL;
+				public ushort wParamH;
+			}
+
+			public void SetCursorPosition(int x, int y)
+			{
+				SetCursorPos(x, y);
+			}
+
+			public void LeftClick()
+			{
+				var inputs = new INPUT[2];
+
+				inputs[0] = new INPUT
+				{
+					type = INPUT_MOUSE,
+					U = new InputUnion
+					{
+						mi = new MOUSEINPUT
+						{
+							dwFlags = MOUSEEVENTF_LEFTDOWN
+						}
+					}
+				};
+
+				inputs[1] = new INPUT
+				{
+					type = INPUT_MOUSE,
+					U = new InputUnion
+					{
+						mi = new MOUSEINPUT
+						{
+							dwFlags = MOUSEEVENTF_LEFTUP
+						}
+					}
+				};
+
+				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+			}
+
+			public void KeyPress(ushort virtualKey)
+			{
+				KeyDown(virtualKey);
+				// Sleep(20); // Sleep wird in Automation-Klasse gehandhabt
+				KeyUp(virtualKey);
+			}
+
+			public void KeyDown(ushort virtualKey)
+			{
+				var input = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						ki = new KEYBDINPUT
+						{
+							wVk = virtualKey,
+							dwFlags = 0
+						}
+					}
+				};
+
+				SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
+			}
+
+			public void KeyUp(ushort virtualKey)
+			{
+				var input = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						ki = new KEYBDINPUT
+						{
+							wVk = virtualKey,
+							dwFlags = KEYEVENTF_KEYUP
+						}
+					}
+				};
+
+				SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
+			}
+
+			public void SendUnicodeChar(char ch)
+			{
+				var keyDown = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						ki = new KEYBDINPUT
+						{
+							wScan = ch,
+							dwFlags = KEYEVENTF_UNICODE
+						}
+					}
+				};
+
+				var keyUp = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						mi = new MOUSEINPUT
+						{
+							dwFlags = MOUSEEVENTF_LEFTUP
+						}
+					}
+				};
+
+				var inputs = new[] { keyDown, keyUp };
+				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+			}
+			{
+				public int dx;
+				public int dy;
+				public uint mouseData;
+				public uint dwFlags;
+				public uint time;
+				public IntPtr dwExtraInfo;
+			}
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct KEYBDINPUT
+			{
+				public ushort wVk;
+				public ushort wScan;
+				public uint dwFlags;
+				public uint time;
+				public IntPtr dwExtraInfo;
+			}
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct HARDWAREINPUT
+			{
+				public uint uMsg;
+				public ushort wParamL;
+				public ushort wParamH;
+			}
+
+			public void SetCursorPosition(int x, int y)
+			{
+				SetCursorPos(x, y);
+			}
+
+			public void LeftClick()
+			{
+				var inputs = new INPUT[2];
+
+				inputs[0] = new INPUT
+				{
+					type = INPUT_MOUSE,
+					U = new InputUnion
+					{
+						mi = new MOUSEINPUT
+						{
+							dwFlags = MOUSEEVENTF_LEFTDOWN
+						}
+					}
+				};
+
+				inputs[1] = new INPUT
+				{
+					type = INPUT_MOUSE,
+					U = new InputUnion
+					{
+						mi = new MOUSEINPUT
+						{
+							dwFlags = MOUSEEVENTF_LEFTUP
+						}
+					}
+				};
+
+				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+			}
+
+			public void KeyPress(ushort virtualKey)
+			{
+				KeyDown(virtualKey);
+				// Sleep(20); // Sleep wird in Automation-Klasse gehandhabt
+				KeyUp(virtualKey);
+			}
+
+			public void KeyDown(ushort virtualKey)
+			{
+				var input = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						ki = new KEYBDINPUT
+						{
+							wVk = virtualKey,
+							dwFlags = 0
+						}
+					}
+				};
+
+				SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
+			}
+
+			public void KeyUp(ushort virtualKey)
+			{
+				var input = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						ki = new KEYBDINPUT
+						{
+							wVk = virtualKey,
+							dwFlags = KEYEVENTF_KEYUP
+						}
+					}
+				};
+
+				SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
+			}
+
+			public void SendUnicodeChar(char ch)
+			{
+				var keyDown = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						ki = new KEYBDINPUT
+						{
+							wScan = ch,
+							dwFlags = KEYEVENTF_UNICODE
+						}
+					}
+				};
+
+				var keyUp = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						ki = new KEYBDINPUT
+						{
+							wScan = ch,
+							dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+						}
+					}
+				};
+
+				var inputs = new[] { keyDown, keyUp };
+				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+			}
+
+			public void SelectAll()
+			{
+				KeyDown(VK_CONTROL);
+				// Sleep(25); // Sleep wird in Automation-Klasse gehandhabt
+				KeyPress(VK_A);
+				// Sleep(25); // Sleep wird in Automation-Klasse gehandhabt
+				KeyUp(VK_CONTROL);
+				// Sleep(60); // Sleep wird in Automation-Klasse gehandhabt
+			}
+
+			public void TypeText(string text)
+			{
+				if (string.IsNullOrEmpty(text))
+					return;
+
+				foreach (char ch in text)
+				{
+					SendUnicodeChar(ch);
+					// Sleep(DefaultTypingDelayMs); // Sleep wird in Automation-Klasse gehandhabt
+				}
+			}
+			{
+				var keyDown = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						ki = new KEYBDINPUT
+						{
+							wScan = ch,
+							dwFlags = KEYEVENTF_UNICODE
+						}
+					}
+				};
+
+				var keyUp = new INPUT
+				{
+					type = INPUT_KEYBOARD,
+					U = new InputUnion
+					{
+						mi = new MOUSEINPUT
+						{
+							dwFlags = MOUSEEVENTF_LEFTUP
+						}
+					}
+				};
+
+				var inputs = new[] { keyDown, keyUp };
+				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+			}
+
+		public float GetDpiScaleFactor()
+			{
+				IntPtr hdc = GetDC(IntPtr.Zero);
+				if (hdc == IntPtr.Zero)
+					return 1.0f; // Fallback
+
+				int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
+				ReleaseDC(IntPtr.Zero, hdc);
+
+				// Standard-DPI ist 96
+				return (float)dpiX / 96.0f;
+			}
+
+			public IntPtr GetActiveWindowHandle()
 		{
 			return GetForegroundWindow();
 		}
@@ -216,7 +612,32 @@ namespace CopagoAutomation.Automation
 			return GetWindowTitle(boundWindow.Handle);
 		}
 
-		public bool TryGetWindowRect(IntPtr handle, out WindowRect windowRect)
+		public bool TryGetClientRect(IntPtr handle, out WindowRect clientRect)
+			{
+				clientRect = default;
+
+				if (!IsValidHandle(handle))
+					return false;
+
+				if (!GetClientRect(handle, out RECT rect))
+					return false;
+
+				// Convert client coordinates to screen coordinates for the top-left corner
+				POINT topLeft = new POINT { X = rect.Left, Y = rect.Top };
+				ClientToScreen(handle, ref topLeft);
+
+				clientRect = new WindowRect
+				{
+					Left = topLeft.X,
+					Top = topLeft.Y,
+					Right = topLeft.X + rect.Right - rect.Left,
+					Bottom = topLeft.Y + rect.Bottom - rect.Top
+				};
+
+				return true;
+			}
+
+			public bool TryGetWindowRect(IntPtr handle, out WindowRect windowRect)
 		{
 			windowRect = default;
 
@@ -286,6 +707,19 @@ namespace CopagoAutomation.Automation
 
 		[StructLayout(LayoutKind.Sequential)]
 		private struct RECT
+			{
+				public int Left;
+				public int Top;
+				public int Right;
+				public int Bottom;
+			}
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct POINT
+			{
+				public int X;
+				public int Y;
+			}
 		{
 			public int Left;
 			public int Top;

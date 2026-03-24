@@ -21,6 +21,7 @@ namespace CopagoAutomation
 		private readonly CalibrationStorage _calibrationStorage;
 
 		private AutomationService? _automationService;
+			private WindowAutomation? _windowAutomation;
 		private CalibrationData? _calibrationData;
 		private CalibrationService? _calibrationService;
 		private MainViewModel? _mainViewModel;
@@ -108,7 +109,8 @@ namespace CopagoAutomation
 			try
 			{
 				_calibrationData = await _calibrationStorage.LoadAsync();
-				_calibrationService = new CalibrationService(_calibrationData);
+				_windowAutomation = new WindowAutomation();
+					_calibrationService = new CalibrationService(_calibrationData, _windowAutomation);
 
 				if (_settings == null)
 					_settings = new AppSettings();
@@ -197,10 +199,12 @@ namespace CopagoAutomation
 			return mode == MachineMode.Laptop ? "laptop" : "dock";
 		}
 
-		private bool TryGetCurrentClientCursorPosition(out int x, out int y)
+		private bool TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow)
 		{
-			x = 0;
-			y = 0;
+x = 0;
+				y = 0;
+				boundCopagoWindow = null;
+				if (_windowAutomation == null) return false;
 
 			if (!GetCursorPos(out POINT screenPoint))
 				return false;
@@ -215,12 +219,19 @@ namespace CopagoAutomation
 
 			POINT clientPoint = screenPoint;
 
-			if (!ScreenToClient(rootWindow, ref clientPoint))
-				return false;
+if (!ScreenToClient(rootWindow, ref clientPoint))
+					return false;
 
-			x = clientPoint.X;
-			y = clientPoint.Y;
-			return true;
+				// If the root window is Copago, bind it
+				// Check if _windowAutomation is initialized
+				if (_windowAutomation != null && _windowAutomation.TryBindWindowByHandle(rootWindow, out var copagoWindow))
+				{
+					boundCopagoWindow = copagoWindow;
+				}
+
+				x = clientPoint.X;
+				y = clientPoint.Y;
+				return true;
 		}
 
 		private bool TryGetDigitFromHotkeyId(int hotkeyId, out int digit)
@@ -316,10 +327,10 @@ namespace CopagoAutomation
 			if (pressedDigit != expectedDigit)
 				return;
 
-			if (!TryGetCurrentClientCursorPosition(out int x, out int y))
+			if (!TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow))
 				return;
 
-			bool captured = _mainViewModel.SetLastCapturedPosition(x, y);
+			bool captured = _mainViewModel.SetLastCapturedPosition(x, y, boundCopagoWindow);
 			if (!captured)
 				return;
 

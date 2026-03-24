@@ -1,15 +1,23 @@
 ﻿using System;
 using System.Linq;
+using CopagoAutomation.Automation;
 
 namespace CopagoAutomation.Calibration
 {
 	public class CalibrationService
 	{
 		private readonly CalibrationData _data;
+		private readonly WindowAutomation _windowAutomation;
 
 		public CalibrationService(CalibrationData data)
+			: this(data, new WindowAutomation())
+		{
+		}
+
+		public CalibrationService(CalibrationData data, WindowAutomation windowAutomation)
 		{
 			_data = data ?? throw new ArgumentNullException(nameof(data));
+			_windowAutomation = windowAutomation ?? throw new ArgumentNullException(nameof(windowAutomation));
 		}
 
 		public CalibrationData GetData()
@@ -58,7 +66,7 @@ namespace CopagoAutomation.Calibration
 			return profile;
 		}
 
-		public CalibrationPoint? GetPoint(string modeName, string profileName, string key)
+		public CalibrationPoint? GetPoint(string modeName, string profileName, string key, BoundWindowInfo? targetWindow = null)
 		{
 			ValidateModeName(modeName);
 			ValidateProfileName(profileName);
@@ -76,11 +84,25 @@ namespace CopagoAutomation.Calibration
 			if (profile == null)
 				return null;
 
-			return profile.Points.FirstOrDefault(p =>
-				string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
+var point = profile.Points.FirstOrDefault(p =>
+					string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
+
+				if (point != null && point.IsRelative && targetWindow.HasValue && targetWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(targetWindow.Value.Handle, out var clientRect))
+				{
+					// Create a new point with absolute coordinates for automation
+					return new CalibrationPoint
+					{
+						Key = point.Key,
+						X = clientRect.Left + point.RelativeX,
+						Y = clientRect.Top + point.RelativeY,
+						IsRelative = false // Returned point is now absolute
+					};
+				}
+
+				return point;
 		}
 
-		public void SetPoint(string modeName, string profileName, string key, int x, int y)
+		public void SetPoint(string modeName, string profileName, string key, int x, int y, BoundWindowInfo? boundWindow = null)
 		{
 			ValidateModeName(modeName);
 			ValidateProfileName(profileName);
@@ -97,15 +119,37 @@ namespace CopagoAutomation.Calibration
 			{
 				existingPoint.X = x;
 				existingPoint.Y = y;
+				if (boundWindow.HasValue && boundWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var clientRect))
+				{
+					existingPoint.RelativeX = x - clientRect.Left;
+					existingPoint.RelativeY = y - clientRect.Top;
+					existingPoint.IsRelative = true;
+				}
+				else
+				{
+					existingPoint.IsRelative = false;
+				}
 				return;
 			}
 
-			profile.Points.Add(new CalibrationPoint
+			var newPoint = new CalibrationPoint
 			{
 				Key = key,
 				X = x,
 				Y = y
-			});
+			};
+
+			if (boundWindow.HasValue && boundWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var clientRect))
+			{
+				newPoint.RelativeX = x - clientRect.Left;
+				newPoint.RelativeY = y - clientRect.Top;
+				newPoint.IsRelative = true;
+			}
+			else
+			{
+				newPoint.IsRelative = false;
+			}
+			profile.Points.Add(newPoint);
 		}
 
 		public bool HasPoint(string modeName, string profileName, string key)
