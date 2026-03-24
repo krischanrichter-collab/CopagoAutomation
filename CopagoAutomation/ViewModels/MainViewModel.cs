@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using CopagoAutomation.Calibration;
@@ -137,6 +137,11 @@ namespace CopagoAutomation.ViewModels
 			NotifyCalibrationStateChanged();
 
 			return true;
+		}
+
+		public void NextStep()
+		{
+			SaveCurrentCalibrationPoint();
 		}
 
 		public void CancelCalibration()

@@ -398,7 +398,7 @@ namespace CopagoAutomation
 
 		private async Task RunCalibrationWithPromptAsync(
 			string modeName,
-			CalibrationProfile profile,
+			string profileName,
 			string profileDisplayName,
 			Action<string> logger)
 		{
@@ -409,7 +409,7 @@ namespace CopagoAutomation
 
 			try
 			{
-				_mainViewModel.StartCalibration(modeName, profile);
+				_mainViewModel.StartCalibration(modeName, profileName);
 				logger($"Kalibrierung für '{profileDisplayName}' ({modeName}) gestartet.");
 
 				while (!_mainViewModel.IsCalibrationFinished)

@@ -1,9 +1,10 @@
-﻿using System.Windows;
+using System;
+using System.Windows;
 using System.Windows.Input;
 
 namespace CopagoAutomation.Windows
 {
-	public partial class CalibrationPromptWindow : Window
+	public partial class CalibrationPromptWindow : Window, IDisposable
 	{
 		public string StepTitle
 		{
@@ -68,11 +69,11 @@ namespace CopagoAutomation.Windows
 			OkButton.IsEnabled = false;
 		}
 
-		public void SetStep(string stepTitle, string hotkeyText, string instructionText)
+		public void SetStepInfo(string stepTitle, string instructionText, string hotkeyText)
 		{
 			StepTitle = stepTitle;
-			HotkeyText = hotkeyText;
 			InstructionText = instructionText;
+			HotkeyText = hotkeyText;
 
 			ResetWindowState();
 		}
@@ -103,6 +104,7 @@ namespace CopagoAutomation.Windows
 
 			WasConfirmed = true;
 			WasCancelled = false;
+			DialogResult = true;
 			Close();
 		}
 
@@ -110,7 +112,13 @@ namespace CopagoAutomation.Windows
 		{
 			WasConfirmed = false;
 			WasCancelled = true;
+			DialogResult = false;
 			Close();
+		}
+
+		public void Dispose()
+		{
+			// Keine speziellen Ressourcen freizugeben, aber IDisposable wird für 'using' benötigt
 		}
 	}
 }
