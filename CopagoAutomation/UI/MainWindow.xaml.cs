@@ -11,7 +11,6 @@ using CopagoAutomation.Data;
 using CopagoAutomation.Models;
 using CopagoAutomation.Services;
 using CopagoAutomation.ViewModels;
-using CopagoAutomation.Models;
 using CopagoAutomation.Windows;
 
 namespace CopagoAutomation
@@ -90,11 +89,11 @@ namespace CopagoAutomation
 
 			// ABC Speicherfelder automatisch speichern, wenn der Nutzer manuell tippt
 			AbcBaseFolder.LostFocus += AbcStorageFields_LostFocus;
-                AbcSammelordner.LostFocus += AbcStorageFields_LostFocus;
+			AbcSammelordner.LostFocus += AbcStorageFields_LostFocus;
 
-                // X-Liste Speicherfelder automatisch speichern, wenn der Nutzer manuell tippt
-                XBaseFolder.LostFocus += XStorageFields_LostFocus;
-                XSammelordner.LostFocus += XStorageFields_LostFocus;
+			// X-Liste Speicherfelder automatisch speichern, wenn der Nutzer manuell tippt
+			XBaseFolder.LostFocus += XStorageFields_LostFocus;
+			XSammelordner.LostFocus += XStorageFields_LostFocus;
 
 			LoadPosEntries();
 			LoadSettings();
@@ -108,14 +107,14 @@ namespace CopagoAutomation
 		{
 			try
 			{
-					_calibrationData = await _calibrationStorage.LoadAsync();
-					_calibrationService = new CalibrationService(_calibrationData);
+				_calibrationData = await _calibrationStorage.LoadAsync();
+				_calibrationService = new CalibrationService(_calibrationData);
 
-					if (_settings == null)
-						_settings = new AppSettings();
+				if (_settings == null)
+					_settings = new AppSettings();
 
-					_automationService = new AutomationService(_calibrationService, new PathResolver(_settings));
-					_mainViewModel = new MainViewModel(_calibrationService);
+				_automationService = new AutomationService(_calibrationService, new PathResolver(_settings));
+				_mainViewModel = new MainViewModel(_calibrationService);
 			}
 			catch (Exception ex)
 			{
@@ -160,11 +159,11 @@ namespace CopagoAutomation
 				_settings = new AppSettings();
 			}
 
-                ApplyModesToUi();
-                ApplyStorageSettingsToUi();
-                UpdateAbcSaveModeUi();
-                ApplyXStorageSettingsToUi();
-                UpdateXSaveModeUi();
+			ApplyModesToUi();
+			ApplyStorageSettingsToUi();
+			UpdateAbcSaveModeUi();
+			ApplyXStorageSettingsToUi();
+			UpdateXSaveModeUi();
 		}
 
 		private void LoadPosEntries()
@@ -389,9 +388,7 @@ namespace CopagoAutomation
 				dialog.InitialDirectory = currentPath;
 			}
 
-			bool? result = dialog.ShowDialog();
-
-			if (result == true)
+			if (dialog.ShowDialog() == true)
 			{
 				return dialog.FolderName;
 			}
@@ -399,106 +396,61 @@ namespace CopagoAutomation
 			return null;
 		}
 
-		private Task WaitForWindowCloseAsync(Window window)
-		{
-			var tcs = new TaskCompletionSource<bool>();
-
-			void ClosedHandler(object? sender, EventArgs e)
-			{
-				window.Closed -= ClosedHandler;
-				tcs.TrySetResult(true);
-			}
-
-			window.Closed += ClosedHandler;
-			return tcs.Task;
-		}
-
 		private async Task RunCalibrationWithPromptAsync(
 			string modeName,
-			string profileName,
+			CalibrationProfile profile,
 			string profileDisplayName,
-			Action<string> logAction)
+			Action<string> logger)
 		{
 			if (_mainViewModel == null)
-			{
-				logAction("Kalibrierung konnte nicht gestartet werden.");
 				return;
-			}
+
+			this.Hide();
 
 			try
 			{
-				this.Hide();
+				_mainViewModel.StartCalibration(modeName, profile);
+				logger($"Kalibrierung für '{profileDisplayName}' ({modeName}) gestartet.");
 
-				_mainViewModel.StartCalibration(modeName, profileName);
-
-				logAction($"Kalibrierung für {profileDisplayName} gestartet. Modus: {modeName}");
-
-				while (_mainViewModel.IsCalibrationRunning && _mainViewModel.CurrentCalibrationStep != null)
+				while (!_mainViewModel.IsCalibrationFinished)
 				{
-					var currentStep = _mainViewModel.CurrentCalibrationStep;
-					if (currentStep == null)
-						break;
+					var step = _mainViewModel.CurrentCalibrationStep;
+					if (step == null) break;
 
-					logAction($"Schritt: {_mainViewModel.CurrentCalibrationTitle}");
-					logAction($"Hotkey: {_mainViewModel.CurrentCalibrationHotkeyText}");
-					logAction(_mainViewModel.CurrentCalibrationInstructionText);
-
-					var promptWindow = new CalibrationPromptWindow
+					using (var prompt = new CalibrationPromptWindow())
 					{
-						Owner = this,
-						Topmost = true
-					};
+						prompt.Owner = null;
+						prompt.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+						prompt.Topmost = true;
 
-					promptWindow.SetStep(
-						_mainViewModel.CurrentCalibrationTitle,
-						_mainViewModel.CurrentCalibrationHotkeyText,
-						_mainViewModel.CurrentCalibrationInstructionText);
+						prompt.SetStepInfo(
+							_mainViewModel.CurrentCalibrationTitle,
+							_mainViewModel.CurrentCalibrationInstructionText,
+							_mainViewModel.CurrentCalibrationHotkeyText);
 
-					_activeCalibrationPrompt = promptWindow;
+						_activeCalibrationPrompt = prompt;
 
-					Task waitForCloseTask = WaitForWindowCloseAsync(promptWindow);
-					promptWindow.Show();
-					await waitForCloseTask;
+						bool? result = prompt.ShowDialog();
 
-					if (ReferenceEquals(_activeCalibrationPrompt, promptWindow))
-					{
 						_activeCalibrationPrompt = null;
+
+						if (result == true)
+						{
+							_mainViewModel.NextStep();
+						}
+						else
+						{
+							_mainViewModel.CancelCalibration();
+							logger("Kalibrierung abgebrochen.");
+							return;
+						}
 					}
-
-					if (promptWindow.WasCancelled || !promptWindow.WasConfirmed)
-					{
-						_mainViewModel.CancelCalibration();
-						logAction($"Kalibrierung für {profileDisplayName} abgebrochen.");
-						return;
-					}
-
-					if (!_mainViewModel.HasLastCapturedPosition)
-					{
-						_mainViewModel.CancelCalibration();
-						logAction("Kalibrierung abgebrochen: Es wurde keine Mausposition übernommen.");
-						return;
-					}
-
-					string stepTitle = currentStep.Title;
-					string stepKey = currentStep.Key;
-					int x = _mainViewModel.LastCapturedX;
-					int y = _mainViewModel.LastCapturedY;
-
-					bool saved = _mainViewModel.SaveCurrentCalibrationPoint();
-
-					if (!saved)
-					{
-						logAction("Kalibrierpunkt konnte nicht gespeichert werden.");
-						return;
-					}
-
-					logAction($"Gespeichert: {stepTitle} ({stepKey}) -> X={x}, Y={y}");
 				}
 
 				if (_mainViewModel.IsCalibrationFinished)
 				{
 					await SaveCalibrationDataAsync();
-					logAction($"{profileDisplayName} Kalibrierung vollständig abgeschlossen und gespeichert.");
+					logger("Kalibrierung erfolgreich abgeschlossen und gespeichert.");
 				}
 			}
 			finally
@@ -519,26 +471,8 @@ namespace CopagoAutomation
 				_settings.AbcMode = MachineMode.Docking;
 
 			UpdateAbcIniText();
-            await SaveSettingsAsync();
-            }
-
-            private async Task SaveXStorageSettingsFromUiAsync()
-            {
-                if (_settings == null)
-                    _settings = new AppSettings();
-
-                if (XSaveModeAlt == null || XBaseFolder == null || XSammelordner == null)
-                    return;
-
-                _settings.XSaveMode = XSaveModeAlt.IsChecked == true
-                    ? SaveMode.Alternativ
-                    : SaveMode.SemcoUpload;
-
-                _settings.XBaseFolder = XBaseFolder.Text?.Trim();
-                _settings.XSammelordnerPath = XSammelordner.Text?.Trim();
-
-                await SaveSettingsAsync();
-            }
+			await SaveSettingsAsync();
+		}
 
 		private void UpdateAbcIniText()
 		{
@@ -601,123 +535,141 @@ namespace CopagoAutomation
 			UpdateXIniText();
 		}
 
-			private void ApplyStorageSettingsToUi()
-			{
-				if (_settings == null)
-					_settings = new AppSettings();
+		private void ApplyStorageSettingsToUi()
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
 
-				if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
-					return;
+			if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
+				return;
 
-				AbcBaseFolder.Text = _settings.BaseFolder ?? string.Empty;
-				AbcSammelordner.Text = _settings.SammelordnerPath ?? string.Empty;
+			AbcBaseFolder.Text = _settings.AbcBaseFolder ?? string.Empty;
+			AbcSammelordner.Text = _settings.AbcSammelordnerPath ?? string.Empty;
 
-				AbcSaveModeSemco.IsChecked = _settings.SaveMode == SaveMode.SemcoUpload;
-            AbcSaveModeAlt.IsChecked = _settings.SaveMode == SaveMode.Alternativ;
-            }
+			AbcSaveModeSemco.IsChecked = _settings.AbcSaveMode == SaveMode.SemcoUpload;
+			AbcSaveModeAlt.IsChecked = _settings.AbcSaveMode == SaveMode.Alternativ;
+		}
 
-            private void ApplyXStorageSettingsToUi()
-            {
-                if (_settings == null)
-                    _settings = new AppSettings();
+		private void ApplyXStorageSettingsToUi()
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
 
-                if (XBaseFolder == null || XSammelordner == null || XSaveModeSemco == null || XSaveModeAlt == null)
-                    return;
+			if (XBaseFolder == null || XSammelordner == null || XSaveModeSemco == null || XSaveModeAlt == null)
+				return;
 
-                XBaseFolder.Text = _settings.XBaseFolder ?? string.Empty;
-                XSammelordner.Text = _settings.XSammelordnerPath ?? string.Empty;
+			XBaseFolder.Text = _settings.XBaseFolder ?? string.Empty;
+			XSammelordner.Text = _settings.XSammelordnerPath ?? string.Empty;
 
-                XSaveModeSemco.IsChecked = _settings.XSaveMode == SaveMode.SemcoUpload;
-                XSaveModeAlt.IsChecked = _settings.XSaveMode == SaveMode.Alternativ;
-            }
+			XSaveModeSemco.IsChecked = _settings.XSaveMode == SaveMode.SemcoUpload;
+			XSaveModeAlt.IsChecked = _settings.XSaveMode == SaveMode.Alternativ;
+		}
 
-			private async Task SaveAbcStorageSettingsFromUiAsync()
-			{
-				if (_settings == null)
-					_settings = new AppSettings();
+		private async Task SaveAbcStorageSettingsFromUiAsync()
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
 
-				if (AbcSaveModeAlt == null || AbcBaseFolder == null || AbcSammelordner == null)
-					return;
+			if (AbcSaveModeAlt == null || AbcBaseFolder == null || AbcSammelordner == null)
+				return;
 
-				_settings.SaveMode = AbcSaveModeAlt.IsChecked == true
-					? SaveMode.Alternativ
-					: SaveMode.SemcoUpload;
+			_settings.AbcSaveMode = AbcSaveModeAlt.IsChecked == true
+				? SaveMode.Alternativ
+				: SaveMode.SemcoUpload;
 
-				_settings.BaseFolder = AbcBaseFolder.Text?.Trim();
-				_settings.SammelordnerPath = AbcSammelordner.Text?.Trim();
+			_settings.AbcBaseFolder = AbcBaseFolder.Text?.Trim();
+			_settings.AbcSammelordnerPath = AbcSammelordner.Text?.Trim();
 
-				await SaveSettingsAsync();
-			}
+			await SaveSettingsAsync();
+		}
 
-			private void UpdateAbcSaveModeUi()
-			{
-				if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
-					return;
+		private async Task SaveXStorageSettingsFromUiAsync()
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
 
-				bool isSemco = AbcSaveModeSemco.IsChecked == true;
-				AbcBaseFolder.IsEnabled = isSemco;
-            AbcSammelordner.IsEnabled = !isSemco;
-            }
+			if (XSaveModeAlt == null || XBaseFolder == null || XSammelordner == null)
+				return;
 
-            private void UpdateXSaveModeUi()
-            {
-                if (XBaseFolder == null || XSammelordner == null || XSaveModeSemco == null || XSaveModeAlt == null)
-                    return;
+			_settings.XSaveMode = XSaveModeAlt.IsChecked == true
+				? SaveMode.Alternativ
+				: SaveMode.SemcoUpload;
 
-                bool isSemco = XSaveModeSemco.IsChecked == true;
-                XBaseFolder.IsEnabled = isSemco;
-                XSammelordner.IsEnabled = !isSemco;
-            }
+			_settings.XBaseFolder = XBaseFolder.Text?.Trim();
+			_settings.XSammelordnerPath = XSammelordner.Text?.Trim();
 
-			private async void AbcSaveModeChanged(object sender, RoutedEventArgs e)
-			{
-				if (_settings == null)
-					_settings = new AppSettings();
+			await SaveSettingsAsync();
+		}
 
-				if (AbcSaveModeSemco == null || AbcSaveModeAlt == null)
-					return;
+		private void UpdateAbcSaveModeUi()
+		{
+			if (AbcBaseFolder == null || AbcSammelordner == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null)
+				return;
 
-				UpdateAbcSaveModeUi();
-				await SaveAbcStorageSettingsFromUiAsync();
+			bool isSemco = AbcSaveModeSemco.IsChecked == true;
+			AbcBaseFolder.IsEnabled = isSemco;
+			AbcSammelordner.IsEnabled = !isSemco;
+		}
 
-            if (AbcSaveModeSemco.IsChecked == true)
-                LogAbc("Speicher-Modus: Semco Upload");
-            else
-                LogAbc("Speicher-Modus: Alternativer Ordner");
-            }
+		private void UpdateXSaveModeUi()
+		{
+			if (XBaseFolder == null || XSammelordner == null || XSaveModeSemco == null || XSaveModeAlt == null)
+				return;
 
-            private async void XSaveModeChanged(object sender, RoutedEventArgs e)
-            {
-                if (_settings == null)
-                    _settings = new AppSettings();
+			bool isSemco = XSaveModeSemco.IsChecked == true;
+			XBaseFolder.IsEnabled = isSemco;
+			XSammelordner.IsEnabled = !isSemco;
+		}
 
-                if (XSaveModeSemco == null || XSaveModeAlt == null)
-                    return;
+		private async void AbcSaveModeChanged(object sender, RoutedEventArgs e)
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
 
-                UpdateXSaveModeUi();
-                await SaveXStorageSettingsFromUiAsync();
+			if (AbcSaveModeSemco == null || AbcSaveModeAlt == null)
+				return;
 
-                if (XSaveModeSemco.IsChecked == true)
-                    LogX("Speicher-Modus: Semco Upload");
-                else
-                    LogX("Speicher-Modus: Alternativer Ordner");
-            }
+			UpdateAbcSaveModeUi();
+			await SaveAbcStorageSettingsFromUiAsync();
+
+			if (AbcSaveModeSemco.IsChecked == true)
+				LogAbc("Speicher-Modus: Semco Upload");
+			else
+				LogAbc("Speicher-Modus: Alternativer Ordner");
+		}
+
+		private async void XSaveModeChanged(object sender, RoutedEventArgs e)
+		{
+			if (_settings == null)
+				_settings = new AppSettings();
+
+			if (XSaveModeSemco == null || XSaveModeAlt == null)
+				return;
+
+			UpdateXSaveModeUi();
+			await SaveXStorageSettingsFromUiAsync();
+
+			if (XSaveModeSemco.IsChecked == true)
+				LogX("Speicher-Modus: Semco Upload");
+			else
+				LogX("Speicher-Modus: Alternativer Ordner");
+		}
 
 		private async void AbcStorageFields_LostFocus(object sender, RoutedEventArgs e)
 		{
 			if (_settings == null)
 				return;
 
-            await SaveAbcStorageSettingsFromUiAsync();
-            }
+			await SaveAbcStorageSettingsFromUiAsync();
+		}
 
-            private async void XStorageFields_LostFocus(object sender, RoutedEventArgs e)
-            {
-                if (_settings == null)
-                    return;
+		private async void XStorageFields_LostFocus(object sender, RoutedEventArgs e)
+		{
+			if (_settings == null)
+				return;
 
-                await SaveXStorageSettingsFromUiAsync();
-            }
+			await SaveXStorageSettingsFromUiAsync();
+		}
 
 		private async void AbcCalibration_Click(object sender, RoutedEventArgs e)
 		{
@@ -795,22 +747,22 @@ namespace CopagoAutomation
 				.Where(value => !string.IsNullOrWhiteSpace(value))
 				.ToList();
 
-			string activePath = _settings.SaveMode == SaveMode.SemcoUpload
-				? (_settings.BaseFolder ?? string.Empty)
-				: (_settings.SammelordnerPath ?? string.Empty);
+			string activePath = _settings.AbcSaveMode == SaveMode.SemcoUpload
+				? (_settings.AbcBaseFolder ?? string.Empty)
+				: (_settings.AbcSammelordnerPath ?? string.Empty);
 
 			var request = new AbcStartRequest
 			{
 				Mode = _settings.AbcMode,
 				BaseFolder = activePath,
-				UseSammelordner = _settings.SaveMode == SaveMode.Alternativ,
+				UseSammelordner = _settings.AbcSaveMode == SaveMode.Alternativ,
 				SelectedPosCount = selectedPosValues.Count,
-                    SelectedPosValues = selectedPosValues,
-                    DateFrom = AbcDateRuleSelector.DateFrom,
-                    DateTo = AbcDateRuleSelector.DateTo
-                };
+				SelectedPosValues = selectedPosValues,
+				DateFrom = AbcDateRuleSelector.DateFrom,
+				DateTo = AbcDateRuleSelector.DateTo
+			};
 
-			LogAbc($"Start ABC mit Speicher-Modus: {_settings.SaveMode}");
+			LogAbc($"Start ABC mit Speicher-Modus: {_settings.AbcSaveMode}");
 			LogAbc($"Aktiver Zielpfad: {activePath}");
 
 			var results = _automationService.StartAbcAutomation(request);
@@ -843,38 +795,38 @@ namespace CopagoAutomation
 			LogX("Der alte Button 'Mauspunkt übernehmen' wird für den neuen Dialog-Workflow nicht mehr verwendet.");
 		}
 
-		private void XBrowse_Click(object sender, RoutedEventArgs e)
+		private async void XBrowse_Click(object sender, RoutedEventArgs e)
 		{
-            string currentPath = XBaseFolder.Text?.Trim() ?? string.Empty;
-            string? selectedFolder = BrowseForFolder(currentPath);
+			string currentPath = XBaseFolder.Text?.Trim() ?? string.Empty;
+			string? selectedFolder = BrowseForFolder(currentPath);
 
-            if (!string.IsNullOrWhiteSpace(selectedFolder))
-            {
-                XBaseFolder.Text = selectedFolder;
-                await SaveXStorageSettingsFromUiAsync();
-                LogX($"Basisordner gewählt: {selectedFolder}");
-            }
-            else
-            {
-                 LogX("Browse (X-Liste Basisordner) abgebrochen.");
-            }
+			if (!string.IsNullOrWhiteSpace(selectedFolder))
+			{
+				XBaseFolder.Text = selectedFolder;
+				await SaveXStorageSettingsFromUiAsync();
+				LogX($"Basisordner gewählt: {selectedFolder}");
+			}
+			else
+			{
+				LogX("Browse (X-Liste Basisordner) abgebrochen.");
+			}
+		}
 
-            private async void XBrowseSammelordner_Click(object sender, RoutedEventArgs e)
-            {
-                string currentPath = XSammelordner.Text?.Trim() ?? string.Empty;
-                string? selectedFolder = BrowseForFolder(currentPath);
+		private async void XBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+		{
+			string currentPath = XSammelordner.Text?.Trim() ?? string.Empty;
+			string? selectedFolder = BrowseForFolder(currentPath);
 
-                if (!string.IsNullOrWhiteSpace(selectedFolder))
-                {
-                    XSammelordner.Text = selectedFolder;
-                    await SaveXStorageSettingsFromUiAsync();
-                    LogX($"Alternativer Ordner gewählt: {selectedFolder}");
-                }
-                else
-                {
-                    LogX("Browse (X-Liste Alternativ-Ordner) abgebrochen.");
-                }
-            }          }
+			if (!string.IsNullOrWhiteSpace(selectedFolder))
+			{
+				XSammelordner.Text = selectedFolder;
+				await SaveXStorageSettingsFromUiAsync();
+				LogX($"Alternativer Ordner gewählt: {selectedFolder}");
+			}
+			else
+			{
+				LogX("Browse (X-Liste Alternativ-Ordner) abgebrochen.");
+			}
 		}
 
 		private void XResetPos_Click(object sender, RoutedEventArgs e)
@@ -883,51 +835,51 @@ namespace CopagoAutomation
 			LogX("POS Auswahl zurückgesetzt.");
 		}
 
-		private void XStart_Click(object sender, RoutedEventArgs e)
+		private async void XStart_Click(object sender, RoutedEventArgs e)
 		{
-            if (_automationService == null)
-            {
-                LogX("Automation ist noch nicht bereit. Bitte Fenster neu laden oder Kalibrierung prüfen.");
-                return;
-            }
+			if (_automationService == null)
+			{
+				LogX("Automation ist noch nicht bereit. Bitte Fenster neu laden oder Kalibrierung prüfen.");
+				return;
+			}
 
-            if (_settings == null)
-                _settings = new AppSettings();
+			if (_settings == null)
+				_settings = new AppSettings();
 
-            await SaveXStorageSettingsFromUiAsync();
+			await SaveXStorageSettingsFromUiAsync();
 
-            var selectedPosValues = XPosList.SelectedItems
-                .Cast<object>()
-                .Select(item => item?.ToString() ?? string.Empty)
-                .Where(value => !string.IsNullOrWhiteSpace(value))
-                .ToList();
+			var selectedPosValues = XPosList.SelectedItems
+				.Cast<object>()
+				.Select(item => item?.ToString() ?? string.Empty)
+				.Where(value => !string.IsNullOrWhiteSpace(value))
+				.ToList();
 
-            string activePath = _settings.XSaveMode == SaveMode.SemcoUpload
-                ? (_settings.XBaseFolder ?? string.Empty)
-                : (_settings.XSammelordnerPath ?? string.Empty);
+			string activePath = _settings.XSaveMode == SaveMode.SemcoUpload
+				? (_settings.XBaseFolder ?? string.Empty)
+				: (_settings.XSammelordnerPath ?? string.Empty);
 
-            var request = new XStartRequest
-            {
-                Mode = _settings.XMode,
-                BaseFolder = activePath,
-                UseSammelordner = _settings.XSaveMode == SaveMode.Alternativ,
-                SelectedPosCount = selectedPosValues.Count,
-                SelectedPosValues = selectedPosValues,
-                Year = int.Parse(XYear.Text),
-                CumPercent = int.Parse(XCumPercent.Text),
-                ToWeek = int.Parse(XToWeek.Text),
-                SaveMode = _settings.XSaveMode
-            };
+			var request = new XStartRequest
+			{
+				Mode = _settings.XMode,
+				BaseFolder = activePath,
+				UseSammelordner = _settings.XSaveMode == SaveMode.Alternativ,
+				SelectedPosCount = selectedPosValues.Count,
+				SelectedPosValues = selectedPosValues,
+				Year = int.Parse(XYear.Text),
+				CumPercent = int.Parse(XCumPercent.Text),
+				ToWeek = int.Parse(XToWeek.Text),
+				SaveMode = _settings.XSaveMode
+			};
 
-            LogX($"Start X-Liste mit Speicher-Modus: {_settings.XSaveMode}");
-            LogX($"Aktiver Zielpfad: {activePath}");
+			LogX($"Start X-Liste mit Speicher-Modus: {_settings.XSaveMode}");
+			LogX($"Aktiver Zielpfad: {activePath}");
 
-            var results = _automationService.StartXAutomation(request);
+			var results = _automationService.StartXAutomation(request);
 
-            foreach (var line in results)
-            {
-                LogX(line);
-            }
+			foreach (var line in results)
+			{
+				LogX(line);
+			}
 		}
 
 		private void XStop_Click(object sender, RoutedEventArgs e)
