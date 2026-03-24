@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using CopagoAutomation.Calibration;
 using CopagoAutomation.Models;
+using CopagoAutomation.Services;
 
 namespace CopagoAutomation.Automation
 {
