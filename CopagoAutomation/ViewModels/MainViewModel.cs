@@ -119,7 +119,9 @@ namespace CopagoAutomation.ViewModels
 	                _lastCapturedY = y;
 	                _lastBoundWindow = boundWindow;
 	                _hasLastCapturedPosition = true;
+                System.Windows.MessageBox.Show($"SetLastCapturedPosition: Position captured. HasLastCapturedPosition = {_hasLastCapturedPosition}", "Debug");
 	                _activeCalibrationPrompt?.SetCapturedPosition(x, y);
+                System.Windows.MessageBox.Show($"SetLastCapturedPosition: Called SetCapturedPosition on ActiveCalibrationPrompt.", "Debug");
 	
 				OnPropertyChanged(nameof(HasLastCapturedPosition));
 				OnPropertyChanged(nameof(LastCapturedX));
@@ -183,32 +185,52 @@ namespace CopagoAutomation.ViewModels
                 y = 0;
                 boundCopagoWindow = null;
 
-                if (_calibrationService.WindowAutomation == null) return false;
+                System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: Start", "Debug");
+                if (_calibrationService.WindowAutomation == null)
+                {
+                    System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: WindowAutomation is null", "Debug");
+                    return false;
+                }
 
                 // Get current cursor position
                 System.Drawing.Point screenPoint = _calibrationService.WindowAutomation.GetCursorScreenPosition();
+                System.Windows.MessageBox.Show($"TryGetCurrentClientCursorPosition: Screen Point = ({screenPoint.X}, {screenPoint.Y})", "Debug");
 
                 // Try to get the window under the cursor and its root
                 IntPtr childWindow = WindowAutomation.WindowFromPoint(new WindowAutomation.POINT { X = screenPoint.X, Y = screenPoint.Y });
-                if (childWindow == IntPtr.Zero) return false;
+                if (childWindow == IntPtr.Zero)
+                {
+                    System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: Child window is zero", "Debug");
+                    return false;
+                }
 
                 IntPtr rootWindow = WindowAutomation.GetAncestor(childWindow, WindowAutomation.GA_ROOT);
-                if (rootWindow == IntPtr.Zero) return false;
+                if (rootWindow == IntPtr.Zero)
+                {
+                    System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: Root window is zero", "Debug");
+                    return false;
+                }
 
                 // Convert screen coordinates to client coordinates of the root window
                 System.Drawing.Point clientPoint = screenPoint;
                 WindowAutomation.POINT clientPointWin32 = new WindowAutomation.POINT { X = clientPoint.X, Y = clientPoint.Y };
-                if (!WindowAutomation.ScreenToClient(rootWindow, ref clientPointWin32)) return false;
+                if (!WindowAutomation.ScreenToClient(rootWindow, ref clientPointWin32))
+                {
+                    System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: ScreenToClient failed", "Debug");
+                    return false;
+                }
                 clientPoint = new System.Drawing.Point(clientPointWin32.X, clientPointWin32.Y);
 
                 // If the root window is Copago, bind it
                 if (_calibrationService.WindowAutomation.TryBindWindowByHandle(rootWindow, out var copagoWindow))
                 {
                     boundCopagoWindow = copagoWindow;
+                    System.Windows.MessageBox.Show($"TryGetCurrentClientCursorPosition: Bound Copago Window = {copagoWindow.Title}", "Debug");
                 }
 
                 x = clientPoint.X;
                 y = clientPoint.Y;
+                System.Windows.MessageBox.Show($"TryGetCurrentClientCursorPosition: Client Point = ({x}, {y}), returning true", "Debug");
                 return true;
             }
 
