@@ -178,7 +178,7 @@ namespace CopagoAutomation
 
         private async Task SaveCalibrationDataAsync()
         {
-            if (_calibrationData != null)
+              if (_calibrationData != null)
                 await _calibrationStorage.SaveAsync(_calibrationData);
         }
 
@@ -324,7 +324,7 @@ namespace CopagoAutomation
             _mainViewModel.StartCalibration("laptop", "ABC"); // Example default values
         }
 
-        private void AbcMode_Checked(object sender, RoutedEventArgs e)
+        private async void AbcMode_Checked(object sender, RoutedEventArgs e)
         {
             if (_settings == null) return;
 
@@ -333,10 +333,10 @@ namespace CopagoAutomation
             else if (AbcModeDocking.IsChecked == true)
                 _settings.AbcMode = MachineMode.Docking;
 
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
-        private void XMode_Checked(object sender, RoutedEventArgs e)
+        private async void XMode_Checked(object sender, RoutedEventArgs e)
         {
             if (_settings == null) return;
 
@@ -345,10 +345,10 @@ namespace CopagoAutomation
             else if (XModeDocking.IsChecked == true)
                 _settings.XMode = MachineMode.Docking;
 
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
-        private void AbcSaveModeChanged(object sender, RoutedEventArgs e)
+        private async void AbcSaveModeChanged(object sender, RoutedEventArgs e)
         {
             if (_settings == null) return;
 
@@ -358,7 +358,7 @@ namespace CopagoAutomation
                 _settings.AbcSaveMode = SaveMode.Alternativ;
 
             UpdateAbcSaveModeUi();
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
         private void UpdateAbcSaveModeUi()
@@ -380,7 +380,7 @@ namespace CopagoAutomation
             }
         }
 
-        private void XSaveModeChanged(object sender, RoutedEventArgs e)
+        private async void XSaveModeChanged(object sender, RoutedEventArgs e)
         {
             if (_settings == null) return;
 
@@ -390,7 +390,7 @@ namespace CopagoAutomation
                 _settings.XSaveMode = SaveMode.Alternativ;
 
             UpdateXSaveModeUi();
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
         private void UpdateXSaveModeUi()
@@ -412,23 +412,23 @@ namespace CopagoAutomation
             }
         }
 
-        private void AbcStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        private async void AbcStorageFields_LostFocus(object sender, RoutedEventArgs e)
         {
             if (_settings == null || AbcSammelordner == null) return;
 
             _settings.AbcSammelordnerPath = AbcSammelordner.Text;
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
-        private void XStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        private async void XStorageFields_LostFocus(object sender, RoutedEventArgs e)
         {
             if (_settings == null || XSammelordner == null) return;
 
             _settings.XSammelordnerPath = XSammelordner.Text;
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
-        private void AbcBrowseButton_Click(object sender, RoutedEventArgs e)
+        private async void AbcBrowseButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFolderDialog();
             if (dialog.ShowDialog() == true)
@@ -437,12 +437,12 @@ namespace CopagoAutomation
                 if (_settings != null)
                 {
                     _settings.AbcSammelordnerPath = dialog.FolderName;
-                    SaveSettingsAsync();
+                    await SaveSettingsAsync();
                 }
             }
         }
 
-        private void XBrowseButton_Click(object sender, RoutedEventArgs e)
+        private async void XBrowseButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFolderDialog();
             if (dialog.ShowDialog() == true)
@@ -451,25 +451,25 @@ namespace CopagoAutomation
                 if (_settings != null)
                 {
                     _settings.XSammelordnerPath = dialog.FolderName;
-                    SaveSettingsAsync();
+                    await SaveSettingsAsync();
                 }
             }
         }
 
-        private void AbcPosList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private async void AbcPosList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (_settings == null || AbcPosList.SelectedItem == null) return;
 
             _settings.LastPosId = AbcPosList.SelectedItem.ToString();
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
-        private void XPosList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private async void XPosList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (_settings == null || XPosList.SelectedItem == null) return;
 
             _settings.LastPosId = XPosList.SelectedItem.ToString();
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
         private async void AbcStart_Click(object sender, RoutedEventArgs e)
@@ -540,16 +540,16 @@ namespace CopagoAutomation
             MessageBox.Show("X Automation Stop (Not Implemented)", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void AbcResetPos_Click(object sender, RoutedEventArgs e)
+        private async void AbcResetPos_Click(object sender, RoutedEventArgs e)
         {
             AbcPosList.SelectedItems.Clear();
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
-        private void XResetPos_Click(object sender, RoutedEventArgs e)
+        private async void XResetPos_Click(object sender, RoutedEventArgs e)
         {
             XPosList.SelectedItems.Clear();
-            SaveSettingsAsync();
+            await SaveSettingsAsync();
         }
 
         private async void AbcBrowseSammelordner_Click(object sender, RoutedEventArgs e)
@@ -561,7 +561,7 @@ namespace CopagoAutomation
             {
                 _settings.AbcSammelordnerPath = dialog.FolderName;
                 AbcSammelordner.Text = dialog.FolderName;
-                await SaveSettingsAsync();
+                       await SaveSettingsAsync();
             }
         }
 

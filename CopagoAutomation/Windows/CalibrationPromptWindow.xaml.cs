@@ -27,11 +27,11 @@ namespace CopagoAutomation.Windows
 			set => InstructionTextBlock.Text = value;
 		}
 
-		public bool HasCapturedPosition { get; private set; }
 
-		public int CapturedX { get; private set; }
 
-		public int CapturedY { get; private set; }
+
+
+
 
 		public bool WasConfirmed { get; private set; }
 
@@ -68,15 +68,11 @@ namespace CopagoAutomation.Windows
 			ResetCaptureState();
 		}
 
-		public void ResetCaptureState()
-		{
-			HasCapturedPosition = false;
-			CapturedX = 0;
-			CapturedY = 0;
-
-			StatusTextBlock.Text = "Warte auf Tastenkombination...";
-			OkButton.IsEnabled = false;
-		}
+            public void ResetCaptureState()
+            {
+                StatusTextBlock.Text = "Warte auf Tastenkombination...";
+                OkButton.IsEnabled = false;
+            }
 
 		public void SetStepInfo(string stepTitle, string instructionText, string hotkeyText)
 		{
@@ -87,16 +83,12 @@ namespace CopagoAutomation.Windows
 			ResetWindowState();
 		}
 
-		public void SetCapturedPosition(int x, int y)
-		{
-			CapturedX = x;
-			CapturedY = y;
-			HasCapturedPosition = true;
-
-			StatusTextBlock.Text = $"Position erfasst: X={x}, Y={y}";
-			OkButton.IsEnabled = true;
-			OkButton.Focus();
-		}
+            public void SetCapturedPosition(int x, int y)
+            {
+                StatusTextBlock.Text = $"Position erfasst: X={x}, Y={y}";
+                OkButton.IsEnabled = true;
+                OkButton.Focus();
+            }
 
 		private void OkButton_Click(object sender, RoutedEventArgs e)
 		{

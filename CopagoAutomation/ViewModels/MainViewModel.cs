@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using CopagoAutomation.Calibration;
 using CopagoAutomation.Automation; // Hinzugefügt, um WindowAutomation.BoundWindowInfo zu verwenden
+using CopagoAutomation.Windows; // Hinzugefügt, um CalibrationPromptWindow zu verwenden
 
 namespace CopagoAutomation.ViewModels
 {
@@ -36,8 +37,18 @@ namespace CopagoAutomation.ViewModels
 		private int _lastCapturedX;
             private int _lastCapturedY;
             private BoundWindowInfo? _lastBoundWindow;
+            private CalibrationPromptWindow? _activeCalibrationPrompt;
 
             public BoundWindowInfo? LastBoundWindow => _lastBoundWindow;
+            public CalibrationPromptWindow? ActiveCalibrationPrompt
+            {
+                get => _activeCalibrationPrompt;
+                set
+                {
+                    _activeCalibrationPrompt = value;
+                    OnPropertyChanged(nameof(ActiveCalibrationPrompt));
+                }
+            }
 
 		public string CurrentCalibrationModeName => _currentCalibrationModeName;
 
@@ -108,6 +119,7 @@ namespace CopagoAutomation.ViewModels
                 _lastCapturedY = y;
                 _lastBoundWindow = boundWindow;
                 _hasLastCapturedPosition = true;
+                _activeCalibrationPrompt?.SetCapturedPosition(x, y);
 
 			OnPropertyChanged(nameof(HasLastCapturedPosition));
 			OnPropertyChanged(nameof(LastCapturedX));
