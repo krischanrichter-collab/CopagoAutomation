@@ -14,7 +14,7 @@ using CopagoAutomation.Models;
 using CopagoAutomation.Services;
 using CopagoAutomation.ViewModels;
 using CopagoAutomation.Windows;
-using System.Runtime.InteropServices; // Keep this for DllImport of RegisterHotKey/UnregisterHotKey if needed
+
 
 namespace CopagoAutomation
 {
@@ -32,13 +32,6 @@ namespace CopagoAutomation
 
         private HwndSource? _hwndSource;
         private CalibrationPromptWindow? _activeCalibrationPrompt;
-
-        private const int WM_HOTKEY = 0x0312;
-        private const uint MOD_ALT = 0x0001;
-        private const uint MOD_CONTROL = 0x0002;
-
-        private const int HOTKEY_ID_DIGIT_0 = 1000;
-        private const int HOTKEY_ID_NUMPAD_0 = 2000;
 
         private const uint GA_ROOT = 2;
 
@@ -109,12 +102,11 @@ namespace CopagoAutomation
                 return;
 
             _hwndSource.AddHook(WndProc);
-            RegisterCalibrationHotkeys();
         }
 
         private void MainWindow_Closed(object? sender, EventArgs e)
         {
-            UnregisterHotkeys();
+
 
             if (_hwndSource != null)
             {
@@ -222,98 +214,16 @@ namespace CopagoAutomation
             return true;
         }
 
-        private bool TryGetDigitFromHotkeyId(int hotkeyId, out int digit)
-        {
-            digit = -1;
 
-            if (hotkeyId >= HOTKEY_ID_DIGIT_0 && hotkeyId <= HOTKEY_ID_DIGIT_0 + 9)
-            {
-                digit = hotkeyId - HOTKEY_ID_DIGIT_0;
-                return true;
-            }
 
-            if (hotkeyId >= HOTKEY_ID_NUMPAD_0 && hotkeyId <= HOTKEY_ID_NUMPAD_0 + 9)
-            {
-                digit = hotkeyId - HOTKEY_ID_NUMPAD_0;
-                return true;
-            }
 
-            return false;
         }
 
-        private void RegisterCalibrationHotkeys()
-        {
-            IntPtr handle = new WindowInteropHelper(this).Handle;
-            if (handle == IntPtr.Zero)
-                return;
 
-            for (int digit = 0; digit <= 9; digit++)
-            {
-                int normalId = HOTKEY_ID_DIGIT_0 + digit;
-                int numpadId = HOTKEY_ID_NUMPAD_0 + digit;
 
-                uint normalVk = (uint)(0x30 + digit);
-                uint numpadVk = (uint)(0x60 + digit);
-                WindowAutomation.RegisterHotKey(handle, normalId, WindowAutomation.MOD_CONTROL | WindowAutomation.MOD_ALT, normalVk);
-                WindowAutomation.RegisterHotKey(handle, numpadId, WindowAutomation.MOD_CONTROL | WindowAutomation.MOD_ALT, numpadVk);
-            }
-        }
 
-        private void UnregisterHotkeys()
-        {
-            IntPtr handle = new WindowInteropHelper(this).Handle;
-            if (handle == IntPtr.Zero)
-                return;
 
-            for (int digit = 0; digit <= 9; digit++)
-            {
-                int normalId = HOTKEY_ID_DIGIT_0 + digit;
-                int numpadId = HOTKEY_ID_NUMPAD_0 + digit;
-                WindowAutomation.UnregisterHotKey(handle, normalId);
-                WindowAutomation.UnregisterHotKey(handle, numpadId);
-            }
-        }
 
-        private IntPtr WndProc(
-            IntPtr hwnd,
-            int msg,
-            IntPtr wParam,
-            IntPtr lParam,
-            ref bool handled)
-        {
-            if (msg == WM_HOTKEY)
-            {
-                int hotkeyId = wParam.ToInt32();
-                System.Windows.MessageBox.Show($"WndProc: Hotkey {hotkeyId} empfangen.", "Debug WndProc");
-                HandleCalibrationHotkey(hotkeyId);
-                handled = true;
-            }
-
-            return IntPtr.Zero;
-        }
-
-        private void HandleCalibrationHotkey(int hotkeyId)
-        {
-            if (_mainViewModel == null || _mainViewModel.CalibrationRunner == null)
-                return;
-
-            MessageBox.Show($"Hotkey {hotkeyId} gedrückt.", "Debug Hotkey");
-            if (!TryGetDigitFromHotkeyId(hotkeyId, out int digit))
-                return;
-
-            if (digit == 0)
-            {
-                if (TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow))
-                {
-                    _mainViewModel.SetLastCapturedPosition(x, y, boundCopagoWindow);
-                    _activeCalibrationPrompt?.SetCapturedPosition(x, y);
-                }
-            }
-            else if (digit >= 1 && digit <= 9)
-            {
-                // Automation trigger is not implemented in MainViewModel yet, ignore for now or implement later
-            }
-        }
 
         private void CalibrateButton_Click(object sender, RoutedEventArgs e)
         {
@@ -620,4 +530,3 @@ namespace CopagoAutomation
             _activeCalibrationPrompt = null;
         }
     }
-}
