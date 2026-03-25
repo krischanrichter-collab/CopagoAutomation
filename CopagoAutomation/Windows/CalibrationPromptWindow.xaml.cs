@@ -39,23 +39,26 @@ namespace CopagoAutomation.Windows
 
 		public CalibrationPromptWindow(Window owner, MainViewModel viewModel)
 		{
-			InitializeComponent();
-			Owner = owner;
-			_viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
-			DataContext = _viewModel;
+            InitializeComponent();
+            Owner = owner;
+            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            DataContext = _viewModel;
 
-			Loaded += CalibrationPromptWindow_Loaded;
+            // Ensure the window stays on top and doesn't appear in the taskbar
+            Topmost = true;
+            ShowInTaskbar = false;
 
-			OkButton.Click += OkButton_Click;
-			CancelButton.Click += CancelButton_Click;
+            Loaded += CalibrationPromptWindow_Loaded;
 
-			ResetWindowState();
+            OkButton.Click += OkButton_Click;
+            CancelButton.Click += CancelButton_Click;
+
+            ResetWindowState();
 		}
 
 		private void CalibrationPromptWindow_Loaded(object sender, RoutedEventArgs e)
 		{
-			Activate();
-			Topmost = true;
+            Activate();
 		}
 
 		public void ResetWindowState()
