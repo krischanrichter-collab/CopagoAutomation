@@ -146,6 +146,7 @@ namespace CopagoAutomation.Windows
                 return;
 
             // Assuming the hotkey is always for capturing the current position (digit 0)
+            System.Windows.MessageBox.Show("Global Hotkey event received in CalibrationPromptWindow.", "Debug Hotkey Event Reception");
             if (_viewModel.TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow))
             {
                 _viewModel.SetLastCapturedPosition(x, y, boundCopagoWindow);
