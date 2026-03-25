@@ -284,6 +284,7 @@ namespace CopagoAutomation
             if (msg == WM_HOTKEY)
             {
                 int hotkeyId = wParam.ToInt32();
+                System.Windows.MessageBox.Show($"WndProc: Hotkey {hotkeyId} empfangen.", "Debug WndProc");
                 HandleCalibrationHotkey(hotkeyId);
                 handled = true;
             }
