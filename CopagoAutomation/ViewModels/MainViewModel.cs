@@ -34,7 +34,10 @@ namespace CopagoAutomation.ViewModels
 
 		private bool _hasLastCapturedPosition;
 		private int _lastCapturedX;
-		private int _lastCapturedY;
+            private int _lastCapturedY;
+            private BoundWindowInfo? _lastBoundWindow;
+
+            public BoundWindowInfo? LastBoundWindow => _lastBoundWindow;
 
 		public string CurrentCalibrationModeName => _currentCalibrationModeName;
 
@@ -101,13 +104,15 @@ namespace CopagoAutomation.ViewModels
 			if (_calibrationRunner.CurrentStep == null)
 				return false;
 
-			_lastCapturedX = x;
-			_lastCapturedY = y;
-			_hasLastCapturedPosition = true;
+                _lastCapturedX = x;
+                _lastCapturedY = y;
+                _lastBoundWindow = boundWindow;
+                _hasLastCapturedPosition = true;
 
 			OnPropertyChanged(nameof(HasLastCapturedPosition));
 			OnPropertyChanged(nameof(LastCapturedX));
-			OnPropertyChanged(nameof(LastCapturedY));
+                OnPropertyChanged(nameof(LastCapturedY));
+                OnPropertyChanged(nameof(LastBoundWindow));
 
 			return true;
 		}
@@ -170,7 +175,8 @@ namespace CopagoAutomation.ViewModels
 		{
 			_hasLastCapturedPosition = false;
 			_lastCapturedX = 0;
-			_lastCapturedY = 0;
+            	_lastCapturedY = 0;
+            	_lastBoundWindow = null;
 
 			OnPropertyChanged(nameof(HasLastCapturedPosition));
 			OnPropertyChanged(nameof(LastCapturedX));

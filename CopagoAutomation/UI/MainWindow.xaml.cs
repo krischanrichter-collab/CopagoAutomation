@@ -301,9 +301,10 @@ namespace CopagoAutomation
 
             if (digit == 0)
             {
-                if (TryGetCurrentClientCursorPosition(out int x, out int y, out var boundCopagoWindow))
+                if (TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow))
                 {
                     _mainViewModel.SetLastCapturedPosition(x, y, boundCopagoWindow);
+                    _activeCalibrationPrompt?.SetCapturedPosition(x, y);
                 }
             }
             else if (digit >= 1 && digit <= 9)
@@ -596,8 +597,12 @@ namespace CopagoAutomation
             if (_mainViewModel == null) return;
             _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
             _activeCalibrationPrompt.Owner = this;
-            _activeCalibrationPrompt.Show();
             _mainViewModel.StartCalibration("laptop", "X-Liste"); // Example default values
+            if (_activeCalibrationPrompt.ShowDialog() == true)
+            {
+                _mainViewModel.SaveCurrentCalibrationPoint(_mainViewModel.LastBoundWindow);
+            }
+            _activeCalibrationPrompt = null;
         }
 
         private void AbcCalibration_Click(object sender, RoutedEventArgs e)
@@ -605,8 +610,12 @@ namespace CopagoAutomation
             if (_mainViewModel == null) return;
             _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
             _activeCalibrationPrompt.Owner = this;
-            _activeCalibrationPrompt.Show();
             _mainViewModel.StartCalibration("laptop", "ABC Analyse"); // Example default values
+            if (_activeCalibrationPrompt.ShowDialog() == true)
+            {
+                _mainViewModel.SaveCurrentCalibrationPoint(_mainViewModel.LastBoundWindow);
+            }
+            _activeCalibrationPrompt = null;
         }
     }
 }
