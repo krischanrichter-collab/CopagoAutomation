@@ -39,9 +39,7 @@ namespace CopagoAutomation.Services
         public bool RegisterHotkey()
         {
             // Register Ctrl + Alt + 0
-            bool registered = RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_0);
-            System.Windows.MessageBox.Show($"Global Hotkey (Ctrl+Alt+0) registered: {registered}", "Debug Hotkey Registration");
-            return registered;
+            return RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_0);
         }
 
         public void UnregisterHotkey()
@@ -57,7 +55,6 @@ namespace CopagoAutomation.Services
             {
                 if (wParam.ToInt32() == HOTKEY_ID)
                 {
-                    System.Windows.MessageBox.Show("Global Hotkey (Ctrl+Alt+0) pressed.", "Debug Hotkey Event");
                     HotkeyPressed?.Invoke(this, EventArgs.Empty);
                     handled = true;
                 }

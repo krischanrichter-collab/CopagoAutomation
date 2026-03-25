@@ -87,8 +87,10 @@ namespace CopagoAutomation.Windows
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
+            System.Windows.MessageBox.Show("OkButton_Click: Start", "Debug OkButton");
             if (!_viewModel.HasLastCapturedPosition)
             {
+                System.Windows.MessageBox.Show("OkButton_Click: HasLastCapturedPosition is false, returning.", "Debug OkButton");
                 MessageBox.Show(
                     "Bitte zuerst die angezeigte Tastenkombination drücken, um die Mausposition zu übernehmen.",
                     "Kalibrierung",
@@ -98,6 +100,7 @@ namespace CopagoAutomation.Windows
                 return;
             }
 
+            System.Windows.MessageBox.Show("OkButton_Click: Setting WasConfirmed = true and closing dialog.", "Debug OkButton");
             WasConfirmed = true;
             WasCancelled = false;
             DialogResult = true;
@@ -146,7 +149,6 @@ namespace CopagoAutomation.Windows
                 return;
 
             // Assuming the hotkey is always for capturing the current position (digit 0)
-            System.Windows.MessageBox.Show("Global Hotkey event received in CalibrationPromptWindow.", "Debug Hotkey Event Reception");
             if (_viewModel.TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow))
             {
                 _viewModel.SetLastCapturedPosition(x, y, boundCopagoWindow);

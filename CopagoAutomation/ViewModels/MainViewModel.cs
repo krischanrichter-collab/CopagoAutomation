@@ -119,9 +119,9 @@ namespace CopagoAutomation.ViewModels
 	                _lastCapturedY = y;
 	                _lastBoundWindow = boundWindow;
 	                _hasLastCapturedPosition = true;
-                System.Windows.MessageBox.Show($"SetLastCapturedPosition: Position captured. HasLastCapturedPosition = {_hasLastCapturedPosition}", "Debug");
+
 	                _activeCalibrationPrompt?.SetCapturedPosition(x, y);
-                System.Windows.MessageBox.Show($"SetLastCapturedPosition: Called SetCapturedPosition on ActiveCalibrationPrompt.", "Debug");
+
 	
 				OnPropertyChanged(nameof(HasLastCapturedPosition));
 				OnPropertyChanged(nameof(LastCapturedX));
@@ -141,7 +141,8 @@ namespace CopagoAutomation.ViewModels
                     if (TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow))
                     {
                         SetLastCapturedPosition(x, y, boundCopagoWindow);
-                        return true;
+    
+                    return true;
                     }
                 }
                 // For other digits, we might need a different logic or pre-defined points.
@@ -150,31 +151,46 @@ namespace CopagoAutomation.ViewModels
             }
 
             public bool SaveCurrentCalibrationPoint(BoundWindowInfo? boundWindow = null)
-			{
-				if (_calibrationRunner == null || _calibrationRunner.IsFinished)
-					return false;
+					{
+						System.Windows.MessageBox.Show("SaveCurrentCalibrationPoint: Start", "Debug");
+						if (_calibrationRunner == null || _calibrationRunner.IsFinished)
+						{
+							System.Windows.MessageBox.Show("SaveCurrentCalibrationPoint: CalibrationRunner is null or finished, returning false.", "Debug");
+							return false;
+						}
 	
 				var currentStep = _calibrationRunner.CurrentStep;
-				if (currentStep == null)
-					return false;
+                    if (currentStep == null)
+						{
+							System.Windows.MessageBox.Show("SaveCurrentCalibrationPoint: CurrentStep is null, returning false.", "Debug");
+							return false;
+						}
 	
-				if (!_hasLastCapturedPosition)
-					return false;
+                    if (!_hasLastCapturedPosition)
+						{
+							System.Windows.MessageBox.Show("SaveCurrentCalibrationPoint: HasLastCapturedPosition is false, returning false.", "Debug");
+							return false;
+						}
 	
-				if (string.IsNullOrWhiteSpace(_currentCalibrationModeName))
-					return false;
+                    if (string.IsNullOrWhiteSpace(_currentCalibrationModeName))
+						{
+							System.Windows.MessageBox.Show("SaveCurrentCalibrationPoint: CurrentCalibrationModeName is null or empty, returning false.", "Debug");
+							return false;
+						}
 	
-				_calibrationService.SetPoint(
-							_currentCalibrationModeName,
-							_calibrationRunner.ProfileName,
-							currentStep.Key,
-							_lastCapturedX,
-							_lastCapturedY,
-							boundWindow);
+
+                    _calibrationService.SetPoint(
+								_currentCalibrationModeName,
+								_calibrationRunner.ProfileName,
+								currentStep.Key,
+								_lastCapturedX,
+								_lastCapturedY,
+								boundWindow);
 	
-				_calibrationRunner.MoveNext();
-				ResetLastCapture();
-				NotifyCalibrationStateChanged();
+
+                    _calibrationRunner.MoveNext();
+					ResetLastCapture();
+					NotifyCalibrationStateChanged();
 	
 				return true;
 			}
@@ -185,29 +201,29 @@ namespace CopagoAutomation.ViewModels
                 y = 0;
                 boundCopagoWindow = null;
 
-                System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: Start", "Debug");
+                // System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: Start", "Debug");
                 if (_calibrationService.WindowAutomation == null)
                 {
-                    System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: WindowAutomation is null", "Debug");
+                    // System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: WindowAutomation is null", "Debug");
                     return false;
                 }
 
                 // Get current cursor position
                 System.Drawing.Point screenPoint = _calibrationService.WindowAutomation.GetCursorScreenPosition();
-                System.Windows.MessageBox.Show($"TryGetCurrentClientCursorPosition: Screen Point = ({screenPoint.X}, {screenPoint.Y})", "Debug");
+                // System.Windows.MessageBox.Show($"TryGetCurrentClientCursorPosition: Screen Point = ({screenPoint.X}, {screenPoint.Y})", "Debug");
 
                 // Try to get the window under the cursor and its root
                 IntPtr childWindow = WindowAutomation.WindowFromPoint(new WindowAutomation.POINT { X = screenPoint.X, Y = screenPoint.Y });
                 if (childWindow == IntPtr.Zero)
                 {
-                    System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: Child window is zero", "Debug");
+                    // System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: Child window is zero", "Debug");
                     return false;
                 }
 
                 IntPtr rootWindow = WindowAutomation.GetAncestor(childWindow, WindowAutomation.GA_ROOT);
                 if (rootWindow == IntPtr.Zero)
                 {
-                    System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: Root window is zero", "Debug");
+                    // System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: Root window is zero", "Debug");
                     return false;
                 }
 
@@ -216,7 +232,7 @@ namespace CopagoAutomation.ViewModels
                 WindowAutomation.POINT clientPointWin32 = new WindowAutomation.POINT { X = clientPoint.X, Y = clientPoint.Y };
                 if (!WindowAutomation.ScreenToClient(rootWindow, ref clientPointWin32))
                 {
-                    System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: ScreenToClient failed", "Debug");
+                    // System.Windows.MessageBox.Show("TryGetCurrentClientCursorPosition: ScreenToClient failed", "Debug");
                     return false;
                 }
                 clientPoint = new System.Drawing.Point(clientPointWin32.X, clientPointWin32.Y);
@@ -225,12 +241,12 @@ namespace CopagoAutomation.ViewModels
                 if (_calibrationService.WindowAutomation.TryBindWindowByHandle(rootWindow, out var copagoWindow))
                 {
                     boundCopagoWindow = copagoWindow;
-                    System.Windows.MessageBox.Show($"TryGetCurrentClientCursorPosition: Bound Copago Window = {copagoWindow.Title}", "Debug");
+                    // System.Windows.MessageBox.Show($"TryGetCurrentClientCursorPosition: Bound Copago Window = {copagoWindow.Title}", "Debug");
                 }
 
                 x = clientPoint.X;
                 y = clientPoint.Y;
-                System.Windows.MessageBox.Show($"TryGetCurrentClientCursorPosition: Client Point = ({x}, {y}), returning true", "Debug");
+                // System.Windows.MessageBox.Show($"TryGetCurrentClientCursorPosition: Client Point = ({x}, {y}), returning true", "Debug");
                 return true;
             }
 
@@ -258,9 +274,10 @@ namespace CopagoAutomation.ViewModels
 			NotifyCalibrationStateChanged();
 		}
 
-		private void ResetLastCapture()
-		{
-			_hasLastCapturedPosition = false;
+            private void ResetLastCapture()
+			{
+				System.Windows.MessageBox.Show("ResetLastCapture: Resetting captured position.", "Debug");
+				_hasLastCapturedPosition = false;
 			_lastCapturedX = 0;
             	_lastCapturedY = 0;
             	_lastBoundWindow = null;
