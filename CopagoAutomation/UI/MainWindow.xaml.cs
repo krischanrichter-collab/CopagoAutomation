@@ -97,20 +97,12 @@ namespace CopagoAutomation
         private void MainWindow_SourceInitialized(object? sender, EventArgs e)
         {
             _hwndSource = PresentationSource.FromVisual(this) as HwndSource;
-
-            if (_hwndSource == null)
-                return;
-
-            _hwndSource.AddHook(WndProc);
         }
 
         private void MainWindow_Closed(object? sender, EventArgs e)
         {
-
-
             if (_hwndSource != null)
             {
-                _hwndSource.RemoveHook(WndProc);
                 _hwndSource = null;
             }
         }
@@ -178,50 +170,6 @@ namespace CopagoAutomation
         {
             return mode == MachineMode.Laptop ? "laptop" : "dock";
         }
-
-        private bool TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow)
-        {
-            x = 0;
-            y = 0;
-            boundCopagoWindow = null;
-
-            if (_windowAutomation == null) return false;
-
-            // Get current cursor position
-            System.Drawing.Point screenPoint = _windowAutomation.GetCursorScreenPosition();
-
-            // Try to get the window under the cursor and its root
-            IntPtr childWindow = WindowAutomation.WindowFromPoint(new WindowAutomation.POINT { X = screenPoint.X, Y = screenPoint.Y });
-            if (childWindow == IntPtr.Zero) return false;
-
-            IntPtr rootWindow = WindowAutomation.GetAncestor(childWindow, WindowAutomation.GA_ROOT);
-            if (rootWindow == IntPtr.Zero) return false;
-
-            // Convert screen coordinates to client coordinates of the root window
-            System.Drawing.Point clientPoint = screenPoint;
-            WindowAutomation.POINT clientPointWin32 = new WindowAutomation.POINT { X = clientPoint.X, Y = clientPoint.Y };
-            if (!WindowAutomation.ScreenToClient(rootWindow, ref clientPointWin32)) return false;
-            clientPoint = new System.Drawing.Point(clientPointWin32.X, clientPointWin32.Y);
-
-            // If the root window is Copago, bind it
-            if (_windowAutomation.TryBindWindowByHandle(rootWindow, out var copagoWindow))
-            {
-                boundCopagoWindow = copagoWindow;
-            }
-
-            x = clientPoint.X;
-            y = clientPoint.Y;
-            return true;
-        }
-
-
-
-
-        }
-
-
-
-
 
 
 
@@ -530,3 +478,5 @@ namespace CopagoAutomation
             _activeCalibrationPrompt = null;
         }
     }
+
+}

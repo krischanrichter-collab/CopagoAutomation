@@ -7,7 +7,7 @@ namespace CopagoAutomation.Calibration
 	public class CalibrationService
 	{
 		private readonly CalibrationData _data;
-		private readonly WindowAutomation _windowAutomation;
+        public readonly WindowAutomation WindowAutomation;
 
 		public CalibrationService(CalibrationData data)
 			: this(data, new WindowAutomation())
@@ -17,7 +17,7 @@ namespace CopagoAutomation.Calibration
 		public CalibrationService(CalibrationData data, WindowAutomation windowAutomation)
 		{
 			_data = data ?? throw new ArgumentNullException(nameof(data));
-			_windowAutomation = windowAutomation ?? throw new ArgumentNullException(nameof(windowAutomation));
+            WindowAutomation = windowAutomation ?? throw new ArgumentNullException(nameof(windowAutomation));
 		}
 
 		public CalibrationData GetData()
@@ -87,7 +87,7 @@ namespace CopagoAutomation.Calibration
 var point = profile.Points.FirstOrDefault(p =>
 					string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
 
-				if (point != null && point.IsRelative && targetWindow.HasValue && targetWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(targetWindow.Value.Handle, out var clientRect))
+				if (point != null && point.IsRelative && targetWindow.HasValue && targetWindow.Value.HasHandle && WindowAutomation.TryGetClientRect(targetWindow.Value.Handle, out var clientRect))
 				{
 					// Create a new point with absolute coordinates for automation
 					return new CalibrationPoint
@@ -119,7 +119,7 @@ var point = profile.Points.FirstOrDefault(p =>
 				{
 					existingPoint.X = x;
 					existingPoint.Y = y;
-					if (boundWindow.HasValue && boundWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var rect))
+					if (boundWindow.HasValue && boundWindow.Value.HasHandle && WindowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var rect))
 					{
 						existingPoint.RelativeX = x - rect.Left;
 						existingPoint.RelativeY = y - rect.Top;
@@ -139,7 +139,7 @@ var point = profile.Points.FirstOrDefault(p =>
 				Y = y
 			};
 
-				if (boundWindow.HasValue && boundWindow.Value.HasHandle && _windowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var rect2))
+				if (boundWindow.HasValue && boundWindow.Value.HasHandle && WindowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var rect2))
 				{
 					newPoint.RelativeX = x - rect2.Left;
 					newPoint.RelativeY = y - rect2.Top;

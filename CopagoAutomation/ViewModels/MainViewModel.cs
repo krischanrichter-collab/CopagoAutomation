@@ -107,57 +107,110 @@ namespace CopagoAutomation.ViewModels
 			NotifyCalibrationStateChanged();
 		}
 
-        public bool SetLastCapturedPosition(int x, int y, BoundWindowInfo? boundWindow)
-		{
-			if (_calibrationRunner == null || _calibrationRunner.IsFinished)
-				return false;
+            public bool SetLastCapturedPosition(int x, int y, BoundWindowInfo? boundWindow)
+			{
+				if (_calibrationRunner == null || _calibrationRunner.IsFinished)
+					return false;
+	
+				if (_calibrationRunner.CurrentStep == null)
+					return false;
+	
+	                _lastCapturedX = x;
+	                _lastCapturedY = y;
+	                _lastBoundWindow = boundWindow;
+	                _hasLastCapturedPosition = true;
+	                _activeCalibrationPrompt?.SetCapturedPosition(x, y);
+	
+				OnPropertyChanged(nameof(HasLastCapturedPosition));
+				OnPropertyChanged(nameof(LastCapturedX));
+	                OnPropertyChanged(nameof(LastCapturedY));
+	                OnPropertyChanged(nameof(LastBoundWindow));
+	
+				return true;
+			}
 
-			if (_calibrationRunner.CurrentStep == null)
-				return false;
+            public bool SetLastCapturedPositionForDigit(int digit)
+            {
+                // This method is a placeholder. In a real scenario, you might have predefined positions for digits.
+                // For now, we'll just use the last captured position.
+                // Or, if the digit is 0, it means capture current cursor position.
+                if (digit == 0)
+                {
+                    if (TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow))
+                    {
+                        SetLastCapturedPosition(x, y, boundCopagoWindow);
+                        return true;
+                    }
+                }
+                // For other digits, we might need a different logic or pre-defined points.
+                // For now, we'll just return false if it's not digit 0.
+                return false;
+            }
 
-                _lastCapturedX = x;
-                _lastCapturedY = y;
-                _lastBoundWindow = boundWindow;
-                _hasLastCapturedPosition = true;
-                _activeCalibrationPrompt?.SetCapturedPosition(x, y);
+            public bool SaveCurrentCalibrationPoint(BoundWindowInfo? boundWindow = null)
+			{
+				if (_calibrationRunner == null || _calibrationRunner.IsFinished)
+					return false;
+	
+				var currentStep = _calibrationRunner.CurrentStep;
+				if (currentStep == null)
+					return false;
+	
+				if (!_hasLastCapturedPosition)
+					return false;
+	
+				if (string.IsNullOrWhiteSpace(_currentCalibrationModeName))
+					return false;
+	
+				_calibrationService.SetPoint(
+							_currentCalibrationModeName,
+							_calibrationRunner.ProfileName,
+							currentStep.Key,
+							_lastCapturedX,
+							_lastCapturedY,
+							boundWindow);
+	
+				_calibrationRunner.MoveNext();
+				ResetLastCapture();
+				NotifyCalibrationStateChanged();
+	
+				return true;
+			}
 
-			OnPropertyChanged(nameof(HasLastCapturedPosition));
-			OnPropertyChanged(nameof(LastCapturedX));
-                OnPropertyChanged(nameof(LastCapturedY));
-                OnPropertyChanged(nameof(LastBoundWindow));
+            public bool TryGetCurrentClientCursorPosition(out int x, out int y, out BoundWindowInfo? boundCopagoWindow)
+            {
+                x = 0;
+                y = 0;
+                boundCopagoWindow = null;
 
-			return true;
-		}
+                if (_calibrationService.WindowAutomation == null) return false;
 
-        public bool SaveCurrentCalibrationPoint(BoundWindowInfo? boundWindow = null)
-		{
-			if (_calibrationRunner == null || _calibrationRunner.IsFinished)
-				return false;
+                // Get current cursor position
+                System.Drawing.Point screenPoint = _calibrationService.WindowAutomation.GetCursorScreenPosition();
 
-			var currentStep = _calibrationRunner.CurrentStep;
-			if (currentStep == null)
-				return false;
+                // Try to get the window under the cursor and its root
+                IntPtr childWindow = WindowAutomation.WindowFromPoint(new WindowAutomation.POINT { X = screenPoint.X, Y = screenPoint.Y });
+                if (childWindow == IntPtr.Zero) return false;
 
-			if (!_hasLastCapturedPosition)
-				return false;
+                IntPtr rootWindow = WindowAutomation.GetAncestor(childWindow, WindowAutomation.GA_ROOT);
+                if (rootWindow == IntPtr.Zero) return false;
 
-			if (string.IsNullOrWhiteSpace(_currentCalibrationModeName))
-				return false;
+                // Convert screen coordinates to client coordinates of the root window
+                System.Drawing.Point clientPoint = screenPoint;
+                WindowAutomation.POINT clientPointWin32 = new WindowAutomation.POINT { X = clientPoint.X, Y = clientPoint.Y };
+                if (!WindowAutomation.ScreenToClient(rootWindow, ref clientPointWin32)) return false;
+                clientPoint = new System.Drawing.Point(clientPointWin32.X, clientPointWin32.Y);
 
-			_calibrationService.SetPoint(
-						_currentCalibrationModeName,
-						_calibrationRunner.ProfileName,
-						currentStep.Key,
-						_lastCapturedX,
-						_lastCapturedY,
-						boundWindow);
+                // If the root window is Copago, bind it
+                if (_calibrationService.WindowAutomation.TryBindWindowByHandle(rootWindow, out var copagoWindow))
+                {
+                    boundCopagoWindow = copagoWindow;
+                }
 
-			_calibrationRunner.MoveNext();
-			ResetLastCapture();
-			NotifyCalibrationStateChanged();
-
-			return true;
-		}
+                x = clientPoint.X;
+                y = clientPoint.Y;
+                return true;
+            }
 
         public void NextStep(BoundWindowInfo? boundWindow = null)
 		{

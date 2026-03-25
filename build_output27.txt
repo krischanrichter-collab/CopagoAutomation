@@ -1,0 +1,11 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+/home/ubuntu/CopagoAutomation/CopagoAutomation/UI/MainWindow.xaml.cs(521,6): error CS1513: } expected [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_x1xhfekd_wpftmp.csproj]
+
+Build FAILED.
+
+/home/ubuntu/CopagoAutomation/CopagoAutomation/UI/MainWindow.xaml.cs(521,6): error CS1513: } expected [/home/ubuntu/CopagoAutomation/CopagoAutomation/CopagoAutomation_x1xhfekd_wpftmp.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.32
