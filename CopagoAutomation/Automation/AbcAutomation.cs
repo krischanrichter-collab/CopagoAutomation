@@ -186,6 +186,19 @@ namespace CopagoAutomation.Automation
                     logs.Add($"Save für POS {currentPos} ausgelöst");
                     Sleep(DefaultSaveDialogWaitMs);
 
+                    // Automate Save Dialog
+                    string reportName = "ABC_Analyse"; // This should be dynamic if needed
+                    string filePath = _pathResolver.ResolvePath(reportName, currentPos, request.SaveMode);
+                    logs.Add($"Versuche, in Datei zu speichern: {filePath}");
+
+                    if (!_windowAutomation.AutomateSaveDialog(filePath, "Speichern unter", out string saveDialogLog))
+                    {
+                        logs.Add($"Fehler bei Save Dialog Automatisierung: {saveDialogLog}");
+                        return logs;
+                    }
+                    logs.Add(saveDialogLog);
+                    Sleep(DefaultActionDelayMs); // Give some time after save dialog closes
+
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 

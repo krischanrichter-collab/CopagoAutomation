@@ -21,7 +21,7 @@
 
 ## Architektur-Entscheidungen
 
-*   **Relative Koordinaten:** Um die Automatisierung robuster gegen Fensterverschiebungen zu machen, werden Koordinaten relativ zur oberen linken Ecke des Client-Bereichs (`ClientRect`) des Copago-Fensters gespeichert und berechnet.
+*   **Relative Koordinaten:** Um die Automatisierung robuster gegen Fensterverschiebungen zu machen, werden Koordinaten relativ zur oberen linken Ecke des Client-Bereichs (`ClientRect`) des Copago-Fensters gespeichert und berechnet. Es ist wichtig zu beachten, dass die Kalibrierungspunkte **nicht** in Abhängigkeit zum Kalibrierungs-Dialogfenster gemappt werden, sondern immer zum Hauptfenster der Copago-Anwendung.
 *   **Trennung von UI und Logik:** Die Automatisierungslogik (`AbcAutomation`, `XAutomation`) ist von der UI getrennt und wird über den `AutomationService` aufgerufen.
 *   **Zentrale Konfiguration:** Einstellungen werden in `AppSettings` gespeichert und über den `SettingsStore` verwaltet.
 

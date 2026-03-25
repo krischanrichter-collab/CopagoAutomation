@@ -166,6 +166,25 @@ namespace CopagoAutomation.Automation
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
+        // For Save Dialog Automation
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, string lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, StringBuilder lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        private const uint WM_SETTEXT = 0x000C;
+        private const uint BM_CLICK = 0x00F5;
+        private const int GW_CHILD = 5;
+        private const int WM_GETTEXT = 0x000D;
+        private const int WM_GETTEXTLENGTH = 0x000E;
+
         // Wrapper-Methoden
         public void SetCursorPosition(int x, int y)
         {
@@ -326,6 +345,82 @@ namespace CopagoAutomation.Automation
             {
                 SendUnicodeChar(ch);
             }
+        }
+
+        public bool AutomateSaveDialog(string filePath, string dialogTitlePart, out string logMessage)
+        {
+            logMessage = string.Empty;
+            IntPtr saveDialogHwnd = IntPtr.Zero;
+
+            // Find the "Save As" dialog window
+            EnumWindowsProc enumProc = (hWnd, lParam) =>
+            {
+                StringBuilder sb = new StringBuilder(DefaultWindowTextCapacity);
+                GetWindowText(hWnd, sb, DefaultWindowTextCapacity);
+                string windowTitle = sb.ToString();
+
+                if (IsWindowVisible(hWnd) && windowTitle.Contains(dialogTitlePart))
+                {
+                    saveDialogHwnd = hWnd;
+                    return false; // Stop enumeration
+                }
+                return true;
+            };
+
+            EnumWindows(enumProc, IntPtr.Zero);
+
+            if (saveDialogHwnd == IntPtr.Zero)
+            {
+                logMessage = $"Save Dialog mit Titelteil '{dialogTitlePart}' nicht gefunden.";
+                return false;
+            }
+
+            // Activate the dialog window
+            SetForegroundWindow(saveDialogHwnd);
+
+            // Find the file name text box (often a ComboBoxEx32 or Edit control)
+            // This part might need adjustment based on the exact dialog structure
+            IntPtr fileNameTextBoxHwnd = FindWindowEx(saveDialogHwnd, IntPtr.Zero, "DUIViewWndClassName", null); // Modern dialogs
+            if (fileNameTextBoxHwnd == IntPtr.Zero)
+            {
+                fileNameTextBoxHwnd = FindWindowEx(saveDialogHwnd, IntPtr.Zero, "ComboBoxEx32", null);
+                if (fileNameTextBoxHwnd != IntPtr.Zero)
+                {
+                    fileNameTextBoxHwnd = FindWindowEx(fileNameTextBoxHwnd, IntPtr.Zero, "Edit", null);
+                }
+            }
+            if (fileNameTextBoxHwnd == IntPtr.Zero)
+            {
+                fileNameTextBoxHwnd = FindWindowEx(saveDialogHwnd, IntPtr.Zero, "Edit", null); // Older dialogs
+            }
+
+            if (fileNameTextBoxHwnd == IntPtr.Zero)
+            {
+                logMessage = "Dateiname-Textfeld im Save Dialog nicht gefunden.";
+                return false;
+            }
+
+            // Set the file path
+            SendMessage(fileNameTextBoxHwnd, WM_SETTEXT, IntPtr.Zero, filePath);
+            // Find and click the "Save" button
+            IntPtr saveButtonHwnd = FindWindowEx(saveDialogHwnd, IntPtr.Zero, "Button", "Speichern");
+            if (saveButtonHwnd == IntPtr.Zero)
+            {
+                // Fallback for different button text or if it's a default button
+                saveButtonHwnd = FindWindowEx(saveDialogHwnd, IntPtr.Zero, "Button", null); // Try to find any button
+            }
+
+            if (saveButtonHwnd == IntPtr.Zero)
+            {
+                logMessage = "'Speichern'-Button im Save Dialog nicht gefunden.";
+                return false;
+            }
+
+            // Click the "Save" button
+            SendMessage(saveButtonHwnd, BM_CLICK, IntPtr.Zero, IntPtr.Zero);
+
+            logMessage = "Save Dialog erfolgreich automatisiert.";
+            return true;
         }
 
         public float GetDpiScaleFactor()
