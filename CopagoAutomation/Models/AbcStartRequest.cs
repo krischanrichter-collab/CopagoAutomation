@@ -5,7 +5,9 @@ namespace CopagoAutomation.Models
 	public class AbcStartRequest
 	{
 		public MachineMode Mode { get; set; }
-		public string BaseFolder { get; set; } = string.Empty;
+            public string BaseFolder { get; set; } = string.Empty;
+            public SaveMode SaveMode { get; set; }
+            public string? SammelordnerPath { get; set; }
 		public bool UseSammelordner { get; set; }
 		public int SelectedPosCount { get; set; }
 

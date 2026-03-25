@@ -471,66 +471,142 @@ namespace CopagoAutomation
             SaveSettingsAsync();
         }
 
-        private void AbcStart_Click(object sender, RoutedEventArgs e)
+        private async void AbcStart_Click(object sender, RoutedEventArgs e)
         {
-            if (_automationService == null) return;
-            // _automationService.StartAbcAutomation(new AbcStartRequest());
+            if (_automationService == null || _settings == null) return;
+
+            var request = new AbcStartRequest
+            {
+                Mode = _settings.AbcMode,
+                SaveMode = _settings.AbcSaveMode,
+                BaseFolder = _settings.AbcBaseFolder,
+                SammelordnerPath = _settings.AbcSammelordnerPath,
+                SelectedPosValues = AbcPosList.SelectedItems.Cast<string>().ToList()
+            };
+
+            try
+            {
+                var logs = _automationService.StartAbcAutomation(request);
+                foreach (var log in logs)
+                {
+                    // TODO: Display logs in UI
+                    Console.WriteLine(log);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Fehler bei der ABC-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private void XStart_Click(object sender, RoutedEventArgs e)
+        private async void XStart_Click(object sender, RoutedEventArgs e)
         {
-            if (_automationService == null) return;
-            // _automationService.StartXAutomation(new XStartRequest());
+            if (_automationService == null || _settings == null) return;
+
+            var request = new XStartRequest
+            {
+                Mode = _settings.XMode,
+                SaveMode = _settings.XSaveMode,
+                BaseFolder = _settings.XBaseFolder,
+                SammelordnerPath = _settings.XSammelordnerPath,
+                SelectedPosValues = XPosList.SelectedItems.Cast<string>().ToList()
+            };
+
+            try
+            {
+                var logs = _automationService.StartXAutomation(request);
+                foreach (var log in logs)
+                {
+                    // TODO: Display logs in UI
+                    Console.WriteLine(log);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Fehler bei der X-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void AbcStop_Click(object sender, RoutedEventArgs e)
         {
-            // Stop automation
+            // TODO: Implement stop logic for ABC automation
+            MessageBox.Show("ABC Automation Stop (Not Implemented)", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void XStop_Click(object sender, RoutedEventArgs e)
         {
-            // Stop automation
+            // TODO: Implement stop logic for X automation
+            MessageBox.Show("X Automation Stop (Not Implemented)", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void AbcResetPos_Click(object sender, RoutedEventArgs e)
         {
-            // Reset POS
+            AbcPosList.SelectedItems.Clear();
+            SaveSettingsAsync();
         }
 
         private void XResetPos_Click(object sender, RoutedEventArgs e)
         {
-            // Reset POS
+            XPosList.SelectedItems.Clear();
+            SaveSettingsAsync();
         }
 
-        private void AbcBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+        private async void AbcBrowseSammelordner_Click(object sender, RoutedEventArgs e)
         {
-            // Browse
+            if (_settings == null || AbcSammelordner == null) return;
+
+            var dialog = new OpenFolderDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                _settings.AbcSammelordnerPath = dialog.FolderName;
+                AbcSammelordner.Text = dialog.FolderName;
+                await SaveSettingsAsync();
+            }
         }
 
-        private void XBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+        private async void XBrowseSammelordner_Click(object sender, RoutedEventArgs e)
         {
-            // Browse
+            if (_settings == null || XSammelordner == null) return;
+
+            var dialog = new OpenFolderDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                _settings.XSammelordnerPath = dialog.FolderName;
+                XSammelordner.Text = dialog.FolderName;
+                await SaveSettingsAsync();
+            }
         }
 
         private void AbcCapturePoint_Click(object sender, RoutedEventArgs e)
         {
-            // Capture Point
+            if (_mainViewModel == null) return;
+            // Logic for capturing a point for ABC automation
+            MessageBox.Show("ABC Capture Point (Not Implemented)", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void XCapturePoint_Click(object sender, RoutedEventArgs e)
         {
-            // Capture Point
+            if (_mainViewModel == null) return;
+            // Logic for capturing a point for X automation
+            MessageBox.Show("X Capture Point (Not Implemented)", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void XCalibration_Click(object sender, RoutedEventArgs e)
         {
-            // Calibration
+            if (_mainViewModel == null) return;
+            _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
+            _activeCalibrationPrompt.Owner = this;
+            _activeCalibrationPrompt.Show();
+            _mainViewModel.StartCalibration("laptop", "X-Liste"); // Example default values
         }
 
         private void AbcCalibration_Click(object sender, RoutedEventArgs e)
         {
-            // Calibration
+            if (_mainViewModel == null) return;
+            _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
+            _activeCalibrationPrompt.Owner = this;
+            _activeCalibrationPrompt.Show();
+            _mainViewModel.StartCalibration("laptop", "ABC Analyse"); // Example default values
         }
     }
 }

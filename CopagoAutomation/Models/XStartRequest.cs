@@ -16,5 +16,6 @@ namespace CopagoAutomation.Models
         public int ToWeek { get; set; }
 
         public SaveMode SaveMode { get; set; }
+        public string? SammelordnerPath { get; set; }
     }
 }
