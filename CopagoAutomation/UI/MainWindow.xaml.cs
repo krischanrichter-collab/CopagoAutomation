@@ -296,6 +296,7 @@ namespace CopagoAutomation
             if (_mainViewModel == null || _mainViewModel.CalibrationRunner == null)
                 return;
 
+            MessageBox.Show($"Hotkey {hotkeyId} gedrückt.", "Debug Hotkey");
             if (!TryGetDigitFromHotkeyId(hotkeyId, out int digit))
                 return;
 
