@@ -31,7 +31,6 @@ namespace CopagoAutomation
         private AppSettings? _settings;
 
         private HwndSource? _hwndSource;
-        private CalibrationPromptWindow? _activeCalibrationPrompt;
 
         private const uint GA_ROOT = 2;
 
@@ -175,13 +174,7 @@ namespace CopagoAutomation
 
         private void CalibrateButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_mainViewModel == null) return;
-
-            _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
-            _activeCalibrationPrompt.Owner = this;
-            _activeCalibrationPrompt.Show();
-
-            _mainViewModel.StartCalibration("laptop", "ABC"); // Example default values
+            RunCalibration(CalibrationProfiles.AbcAnalyse);
         }
 
         private async void AbcMode_Checked(object sender, RoutedEventArgs e)
@@ -454,28 +447,26 @@ namespace CopagoAutomation
 
         private void XCalibration_Click(object sender, RoutedEventArgs e)
         {
-            if (_mainViewModel == null) return;
-            _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
-            _activeCalibrationPrompt.Owner = this;
-            _mainViewModel.StartCalibration("laptop", "X-Liste"); // Example default values
-            if (_activeCalibrationPrompt.ShowDialog() == true)
-            {
-                _mainViewModel.SaveCurrentCalibrationPoint(_mainViewModel.LastBoundWindow);
-            }
-            _activeCalibrationPrompt = null;
+            RunCalibration(CalibrationProfiles.XListe);
         }
 
         private void AbcCalibration_Click(object sender, RoutedEventArgs e)
         {
+            RunCalibration(CalibrationProfiles.AbcAnalyse);
+        }
+
+        private async void RunCalibration(string profileName)
+        {
             if (_mainViewModel == null) return;
-            _activeCalibrationPrompt = new CalibrationPromptWindow(this, _mainViewModel);
-            _activeCalibrationPrompt.Owner = this;
-            _mainViewModel.StartCalibration("laptop", "ABC Analyse"); // Example default values
-            if (_activeCalibrationPrompt.ShowDialog() == true)
+
+            string modeName = GetCalibrationModeName(_settings?.AbcMode ?? MachineMode.Laptop);
+            _mainViewModel.StartCalibration(modeName, profileName);
+
+            var prompt = new CalibrationPromptWindow(this, _mainViewModel);
+            if (prompt.ShowDialog() == true)
             {
-                _mainViewModel.SaveCurrentCalibrationPoint(_mainViewModel.LastBoundWindow);
+                await SaveCalibrationDataAsync();
             }
-            _activeCalibrationPrompt = null;
         }
     }
 
