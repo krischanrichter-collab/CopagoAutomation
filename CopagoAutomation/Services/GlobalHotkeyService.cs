@@ -77,7 +77,8 @@ namespace CopagoAutomation.Services
             if (_hwndSource != null)
             {
                 _hwndSource.RemoveHook(WndProc);
-                _hwndSource.Dispose();
+                // Do NOT dispose _hwndSource — it was obtained via HwndSource.FromHwnd()
+                // which returns the shared WPF source owned by the window, not by us.
                 _hwndSource = null;
             }
         }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using CopagoAutomation.Calibration;
@@ -75,10 +74,12 @@ namespace CopagoAutomation.Automation
             if (posPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'POS' fehlt."); return logs; }
             var yearPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "Year", boundWindow);
             if (yearPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'Year' fehlt."); return logs; }
-            var cumPercentPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "CumPercent", boundWindow);
-            if (cumPercentPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'CumPercent' fehlt."); return logs; }
-            var toWeekPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "ToWeek", boundWindow);
-            if (toWeekPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'ToWeek' fehlt."); return logs; }
+            var kwFromPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "KwFrom", boundWindow);
+            if (kwFromPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'KwFrom' fehlt."); return logs; }
+            var cumPercentPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "Kumul", boundWindow);
+            if (cumPercentPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'Kumul' fehlt."); return logs; }
+            var toWeekPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "KwTo", boundWindow);
+            if (toWeekPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'KwTo' fehlt."); return logs; }
             var runReportPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "RunReport", boundWindow);
             if (runReportPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'RunReport' fehlt."); return logs; }
             var outputSavePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputSave", boundWindow);
@@ -163,7 +164,7 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    ClickPoint(cumPercentPoint, boundWindow);
+                    ClickPoint(kwFromPoint, boundWindow);
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -175,7 +176,7 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    TypeText(request.CumPercent.ToString());
+                    TypeText(request.FromWeek.ToString());
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -194,6 +195,24 @@ namespace CopagoAutomation.Automation
                         return logs;
 
                     TypeText(request.ToWeek.ToString());
+                    Sleep(DefaultActionDelayMs);
+
+                    if (!EnsureBoundWindowReady(boundWindow, logs))
+                        return logs;
+
+                    ClickPoint(cumPercentPoint, boundWindow);
+                    Sleep(DefaultActionDelayMs);
+
+                    if (!EnsureBoundWindowReady(boundWindow, logs))
+                        return logs;
+
+                    SelectAll();
+                    Sleep(80);
+
+                    if (!EnsureBoundWindowReady(boundWindow, logs))
+                        return logs;
+
+                    TypeText(request.CumPercent.ToString());
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))

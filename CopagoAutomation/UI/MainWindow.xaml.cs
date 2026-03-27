@@ -325,37 +325,43 @@ namespace CopagoAutomation
             await SaveSettingsAsync();
         }
 
-        private async void AbcStart_Click(object sender, RoutedEventArgs e)
+        private void AbcStart_Click(object sender, RoutedEventArgs e)
         {
             if (_automationService == null || _settings == null) return;
 
+            var dateRange = AbcDateRuleSelector.GetOneTimeRange();
             var request = new AbcStartRequest
             {
                 Mode = _settings.AbcMode,
                 SaveMode = _settings.AbcSaveMode,
                 BaseFolder = _settings.AbcBaseFolder,
                 SammelordnerPath = _settings.AbcSammelordnerPath,
-                SelectedPosValues = AbcPosList.SelectedItems.Cast<string>().ToList()
+                SelectedPosValues = AbcPosList.SelectedItems.Cast<string>().ToList(),
+                DateFrom = dateRange?.from ?? AbcDateRuleSelector.DateFrom,
+                DateTo = dateRange?.to ?? AbcDateRuleSelector.DateTo
             };
 
+            AbcLogBox.Clear();
             try
             {
                 var logs = _automationService.StartAbcAutomation(request);
                 foreach (var log in logs)
-                {
-                    // TODO: Display logs in UI
-                    Console.WriteLine(log);
-                }
+                    AbcLogBox.AppendText(log + Environment.NewLine);
             }
             catch (Exception ex)
             {
+                AbcLogBox.AppendText($"Fehler: {ex.Message}{Environment.NewLine}");
                 MessageBox.Show($"Fehler bei der ABC-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private async void XStart_Click(object sender, RoutedEventArgs e)
+        private void XStart_Click(object sender, RoutedEventArgs e)
         {
             if (_automationService == null || _settings == null) return;
+
+            int.TryParse(XYear.Text, out int year);
+            int.TryParse(XCumPercent.Text, out int cumPercent);
+            int.TryParse(XToWeek.Text, out int toWeek);
 
             var request = new XStartRequest
             {
@@ -363,20 +369,22 @@ namespace CopagoAutomation
                 SaveMode = _settings.XSaveMode,
                 BaseFolder = _settings.XBaseFolder,
                 SammelordnerPath = _settings.XSammelordnerPath,
-                SelectedPosValues = XPosList.SelectedItems.Cast<string>().ToList()
+                SelectedPosValues = XPosList.SelectedItems.Cast<string>().ToList(),
+                Year = year > 0 ? year : DateTime.Today.Year,
+                CumPercent = cumPercent,
+                ToWeek = toWeek
             };
 
+            XLogBox.Clear();
             try
             {
                 var logs = _automationService.StartXAutomation(request);
                 foreach (var log in logs)
-                {
-                    // TODO: Display logs in UI
-                    Console.WriteLine(log);
-                }
+                    XLogBox.AppendText(log + Environment.NewLine);
             }
             catch (Exception ex)
             {
+                XLogBox.AppendText($"Fehler: {ex.Message}{Environment.NewLine}");
                 MessageBox.Show($"Fehler bei der X-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -431,20 +439,6 @@ namespace CopagoAutomation
             }
         }
 
-        private void AbcCapturePoint_Click(object sender, RoutedEventArgs e)
-        {
-            if (_mainViewModel == null) return;
-            // Logic for capturing a point for ABC automation
-            MessageBox.Show("ABC Capture Point (Not Implemented)", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void XCapturePoint_Click(object sender, RoutedEventArgs e)
-        {
-            if (_mainViewModel == null) return;
-            // Logic for capturing a point for X automation
-            MessageBox.Show("X Capture Point (Not Implemented)", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
         private void XCalibration_Click(object sender, RoutedEventArgs e)
         {
             RunCalibration(CalibrationProfiles.XListe);
@@ -459,7 +453,10 @@ namespace CopagoAutomation
         {
             if (_mainViewModel == null) return;
 
-            string modeName = GetCalibrationModeName(_settings?.AbcMode ?? MachineMode.Laptop);
+            MachineMode machineMode = profileName == CalibrationProfiles.XListe
+                ? (_settings?.XMode ?? MachineMode.Laptop)
+                : (_settings?.AbcMode ?? MachineMode.Laptop);
+            string modeName = GetCalibrationModeName(machineMode);
             _mainViewModel.StartCalibration(modeName, profileName);
 
             var prompt = new CalibrationPromptWindow(this, _mainViewModel);

@@ -183,11 +183,6 @@
                                         Height="34"
                                         Margin="0,0,12,0"
                                         Click="AbcCalibration_Click"/>
-								<Button Content="Mauspunkt übernehmen"
-                                        Width="170"
-                                        Height="34"
-                                        Margin="0,0,12,0"
-                                        Click="AbcCapturePoint_Click"/>
 								<Button Content="Start"
                                         Width="140"
                                         Height="34"
@@ -381,11 +376,6 @@
                                         Height="34"
                                         Margin="0,0,12,0"
                                         Click="XCalibration_Click"/>
-								<Button Content="Mauspunkt übernehmen"
-                                        Width="170"
-                                        Height="34"
-                                        Margin="0,0,12,0"
-                                        Click="XCapturePoint_Click"/>
 								<Button Content="Start"
                                         Width="140"
                                         Height="34"

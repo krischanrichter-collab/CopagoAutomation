@@ -41,8 +41,6 @@ namespace CopagoAutomation.Services
                     $"Die Kalibrierung für Profil '{AbcProfileName}' im Modus '{modeName}' ist nicht vollständig.");
             }
 
-            var requiredPoints = GetRequiredAbcPoints(modeName);
-
             return _abcAutomation.Run(request, modeName, AbcProfileName);
         }
 
@@ -58,8 +56,6 @@ namespace CopagoAutomation.Services
                 throw new InvalidOperationException(
                     $"Die Kalibrierung für Profil '{XProfileName}' im Modus '{modeName}' ist nicht vollständig.");
             }
-
-            var requiredPoints = GetRequiredXPoints(modeName);
 
             return _xAutomation.Run(request, modeName, XProfileName);
         }
@@ -84,8 +80,9 @@ namespace CopagoAutomation.Services
 
             points["POS"] = GetRequiredPoint(modeName, XProfileName, "POS");
             points["Year"] = GetRequiredPoint(modeName, XProfileName, "Year");
-            points["CumPercent"] = GetRequiredPoint(modeName, XProfileName, "CumPercent");
-            points["ToWeek"] = GetRequiredPoint(modeName, XProfileName, "ToWeek");
+            points["KwFrom"] = GetRequiredPoint(modeName, XProfileName, "KwFrom");
+            points["KwTo"] = GetRequiredPoint(modeName, XProfileName, "KwTo");
+            points["Kumul"] = GetRequiredPoint(modeName, XProfileName, "Kumul");
             points["RunReport"] = GetRequiredPoint(modeName, XProfileName, "RunReport");
             points["OutputSave"] = GetRequiredPoint(modeName, XProfileName, "OutputSave");
             points["OutputClose"] = GetRequiredPoint(modeName, XProfileName, "OutputClose");

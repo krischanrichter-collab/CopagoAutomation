@@ -12,8 +12,9 @@ namespace CopagoAutomation.Models
         public List<string> SelectedPosValues { get; set; } = new();
 
         public int Year { get; set; }
-        public int CumPercent { get; set; }
+        public int FromWeek { get; set; } = 1;
         public int ToWeek { get; set; }
+        public int CumPercent { get; set; }
 
         public SaveMode SaveMode { get; set; }
         public string? SammelordnerPath { get; set; }
