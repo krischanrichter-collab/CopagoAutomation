@@ -97,6 +97,7 @@ namespace CopagoAutomation.Windows
             {
                 // More steps remain — update the UI for the next step
                 ShowCurrentStep();
+                Activate(); // Keep calibration dialog in foreground, prevent main window from gaining focus
             }
             else
             {
@@ -134,6 +135,7 @@ namespace CopagoAutomation.Windows
         {
             StatusTextBlock.Text = $"Position erfasst: X={x}, Y={y}";
             OkButton.IsEnabled   = true;
+            Activate(); // Fenster auf OS-Ebene in den Vordergrund bringen, damit Enter den OK-Button trifft
             OkButton.Focus();
         }
 

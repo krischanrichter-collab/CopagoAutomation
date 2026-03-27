@@ -16,6 +16,8 @@ namespace CopagoAutomation.Automation
         private const int DefaultTypingDelayMs = 35;
         private const int DefaultRunReportWaitMs = 1500;
         private const int DefaultSaveDialogWaitMs = 700;
+        private const int ReportReadyTimeoutMs = 60_000;
+        private const int ReportReadyPollIntervalMs = 500;
 
         private const string CopagoWindowTitlePart = "copago Office Online Verwaltung";
 
@@ -95,6 +97,8 @@ namespace CopagoAutomation.Automation
             if (runReportPoint == null) { logs.Add("Fehler: Kalibrierpunkt \'RunReport\' fehlt."); return logs; }
             var outputSavePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputSave", boundWindow);
             if (outputSavePoint == null) { logs.Add("Fehler: Kalibrierpunkt \'OutputSave\' fehlt."); return logs; }
+            var saveDialogPathPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "SaveDialogPath", boundWindow);
+            if (saveDialogPathPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'SaveDialogPath' fehlt."); return logs; }
             var outputClosePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputClose", boundWindow);
             if (outputClosePoint == null) { logs.Add("Fehler: Kalibrierpunkt \'OutputClose\' fehlt."); return logs; }
 
@@ -176,33 +180,31 @@ namespace CopagoAutomation.Automation
 
                     ClickPoint(runReportPoint, boundWindow);
                     logs.Add($"Report für POS {currentPos} gestartet");
-                    Sleep(DefaultRunReportWaitMs);
 
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
+                    if (!WaitForReportReady(boundWindow, logs))
                         return logs;
 
+                    var windowsBeforeSaveDialog = _windowAutomation.GetVisibleTopLevelWindowHandles();
                     ClickPoint(outputSavePoint, boundWindow);
-                    logs.Add($"Save für POS {currentPos} ausgelöst");
-                    Sleep(DefaultSaveDialogWaitMs);
+                    logs.Add($"Diskette für POS {currentPos} geklickt");
 
-                    // Automate Save Dialog
-                    string reportName = "ABC_Analyse"; // This should be dynamic if needed
+                    if (!WaitForSaveDialog(windowsBeforeSaveDialog, logs, out IntPtr saveDialogHandle))
+                        return logs;
+
+                    string reportName = "ABC_Analyse";
                     string filePath = _pathResolver.ResolvePath(reportName, currentPos, request.SaveMode);
-                    logs.Add($"Versuche, in Datei zu speichern: {filePath}");
+                    logs.Add($"Speicherpfad: {filePath}");
 
-                    if (!_windowAutomation.AutomateSaveDialog(filePath, "Speichern unter", out string saveDialogLog))
+                    if (!_windowAutomation.SetSaveDialogPath(saveDialogHandle, filePath, out string setPathLog))
                     {
-                        logs.Add($"Fehler bei Save Dialog Automatisierung: {saveDialogLog}");
+                        logs.Add($"Fehler beim Setzen des Speicherpfads: {setPathLog}");
                         return logs;
                     }
-                    logs.Add(saveDialogLog);
-                    Sleep(DefaultActionDelayMs); // Give some time after save dialog closes
-
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
+                    logs.Add(setPathLog);
+                    Sleep(DefaultActionDelayMs);
 
                     ClickPoint(outputClosePoint, boundWindow);
-                    logs.Add($"Fenster für POS {currentPos} geschlossen");
+                    logs.Add($"Gespeichert für POS {currentPos}");
                     Sleep(DefaultActionDelayMs);
                 }
                 catch (Exception ex)
@@ -213,6 +215,28 @@ namespace CopagoAutomation.Automation
 
             logs.Add("ABC Automation abgeschlossen");
             return logs;
+        }
+
+        private bool WaitForSaveDialog(HashSet<IntPtr> windowsBefore, List<string> logs, out IntPtr dialogHandle, int timeoutMs = 10_000)
+        {
+            dialogHandle = IntPtr.Zero;
+            logs.Add("Warte auf Save-Dialog...");
+            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            while (DateTime.UtcNow < deadline)
+            {
+                var windowsNow = _windowAutomation.GetVisibleTopLevelWindowHandles();
+                var newHandle = windowsNow.FirstOrDefault(h => !windowsBefore.Contains(h));
+                if (newHandle != IntPtr.Zero)
+                {
+                    Thread.Sleep(ReportReadyPollIntervalMs);
+                    dialogHandle = newHandle;
+                    logs.Add("Save-Dialog erkannt.");
+                    return true;
+                }
+                Thread.Sleep(ReportReadyPollIntervalMs);
+            }
+            logs.Add($"Timeout: Save-Dialog nicht innerhalb von {timeoutMs / 1000}s erschienen.");
+            return false;
         }
 
         private bool EnsureBoundWindowReady(BoundWindowInfo boundWindow, List<string> logs)
@@ -252,6 +276,47 @@ namespace CopagoAutomation.Automation
             }
 
             logs.Add("Automation gestoppt: Fenster konnte nicht reaktiviert werden.");
+            return false;
+        }
+
+        /// <summary>
+        /// Wartet bis das Copago-Fenster wieder auf Nachrichten reagiert (Report fertig ausgewertet).
+        /// Startet mit einem kurzen Initialwait damit die App die Auswertung überhaupt beginnen kann,
+        /// dann wird alle 500 ms geprüft ob das Fenster wieder reagiert.
+        /// </summary>
+        /// <summary>
+        /// Wartet bis das Report-Output-Fenster erscheint.
+        /// Erkennung: Vorher alle sichtbaren Fenster erfassen, dann warten bis ein neues erscheint.
+        /// Das ist unabhängig von Fokus oder aktivem Fenster.
+        /// </summary>
+        private bool WaitForReportReady(BoundWindowInfo boundWindow, List<string> logs)
+        {
+            logs.Add("Warte auf Fertigstellung des Reports...");
+
+            var windowsBefore = _windowAutomation.GetVisibleTopLevelWindowHandles();
+            Thread.Sleep(DefaultRunReportWaitMs); // Initialwait: App startet Auswertung
+
+            var deadline = DateTime.UtcNow.AddMilliseconds(ReportReadyTimeoutMs);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (!_windowAutomation.IsValidHandle(boundWindow.Handle))
+                {
+                    logs.Add("Fehler: Fenster wurde während der Report-Auswertung geschlossen.");
+                    return false;
+                }
+
+                var windowsNow = _windowAutomation.GetVisibleTopLevelWindowHandles();
+                if (windowsNow.Any(h => !windowsBefore.Contains(h)))
+                {
+                    Thread.Sleep(ReportReadyPollIntervalMs); // Kurz warten damit das Fenster vollständig gerendert ist
+                    logs.Add("Report-Output-Fenster erkannt, Report fertig ausgewertet.");
+                    return true;
+                }
+
+                Thread.Sleep(ReportReadyPollIntervalMs);
+            }
+
+            logs.Add($"Timeout: Report-Output-Fenster nicht innerhalb von {ReportReadyTimeoutMs / 1000}s erschienen.");
             return false;
         }
 

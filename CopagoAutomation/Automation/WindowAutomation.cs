@@ -1,7 +1,9 @@
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Drawing; // Für System.Drawing.Rectangle
 
 namespace CopagoAutomation.Automation
@@ -168,7 +170,7 @@ namespace CopagoAutomation.Automation
 
         // For Save Dialog Automation
         [DllImport("user32.dll", SetLastError = true)]
-        public static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+        public static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string? lpszWindow);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, string lParam);
@@ -179,8 +181,13 @@ namespace CopagoAutomation.Automation
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam, uint fuFlags, uint uTimeout, out IntPtr lpdwResult);
+
         private const uint WM_SETTEXT = 0x000C;
         private const uint BM_CLICK = 0x00F5;
+        private const uint WM_NULL = 0x0000;
+        private const uint SMTO_ABORTIFHUNG = 0x0002;
         private const int GW_CHILD = 5;
         private const int WM_GETTEXT = 0x000D;
         private const int WM_GETTEXTLENGTH = 0x000E;
@@ -347,31 +354,75 @@ namespace CopagoAutomation.Automation
             }
         }
 
-        public bool AutomateSaveDialog(string filePath, string dialogTitlePart, out string logMessage)
+        /// <summary>
+        /// Setzt den Dateipfad im Dateinamen-Feld des Save-Dialogs direkt via WM_SETTEXT.
+        /// Kein Tastaturfokus erforderlich – funktioniert zuverlässig mit Windows-Systemdialogen.
+        /// </summary>
+        public bool SetSaveDialogPath(IntPtr dialogHwnd, string filePath, out string logMessage)
+        {
+            logMessage = string.Empty;
+
+            if (!IsValidHandle(dialogHwnd))
+            {
+                logMessage = "Save-Dialog Handle ist ungültig.";
+                return false;
+            }
+
+            // Dateiname-Textfeld suchen (verschiedene Dialog-Typen)
+            IntPtr fileNameTextBoxHwnd = FindWindowEx(dialogHwnd, IntPtr.Zero, "DUIViewWndClassName", null);
+            if (fileNameTextBoxHwnd == IntPtr.Zero)
+            {
+                fileNameTextBoxHwnd = FindWindowEx(dialogHwnd, IntPtr.Zero, "ComboBoxEx32", null);
+                if (fileNameTextBoxHwnd != IntPtr.Zero)
+                    fileNameTextBoxHwnd = FindWindowEx(fileNameTextBoxHwnd, IntPtr.Zero, "Edit", null);
+            }
+            if (fileNameTextBoxHwnd == IntPtr.Zero)
+                fileNameTextBoxHwnd = FindWindowEx(dialogHwnd, IntPtr.Zero, "Edit", null);
+
+            if (fileNameTextBoxHwnd == IntPtr.Zero)
+            {
+                logMessage = "Dateiname-Textfeld im Save-Dialog nicht gefunden.";
+                return false;
+            }
+
+            SetForegroundWindow(dialogHwnd);
+            SendMessage(fileNameTextBoxHwnd, WM_SETTEXT, IntPtr.Zero, filePath);
+            logMessage = $"Speicherpfad gesetzt: {filePath}";
+            return true;
+        }
+
+        public bool AutomateSaveDialog(string filePath, string dialogTitlePart, out string logMessage, int waitTimeoutMs = 10000)
         {
             logMessage = string.Empty;
             IntPtr saveDialogHwnd = IntPtr.Zero;
 
-            // Find the "Save As" dialog window
-            EnumWindowsProc enumProc = (hWnd, lParam) =>
+            // Warte bis der Save Dialog erscheint (polling mit Timeout)
+            var deadline = DateTime.UtcNow.AddMilliseconds(waitTimeoutMs);
+            while (DateTime.UtcNow < deadline)
             {
-                StringBuilder sb = new StringBuilder(DefaultWindowTextCapacity);
-                GetWindowText(hWnd, sb, DefaultWindowTextCapacity);
-                string windowTitle = sb.ToString();
-
-                if (IsWindowVisible(hWnd) && windowTitle.Contains(dialogTitlePart))
+                saveDialogHwnd = IntPtr.Zero;
+                EnumWindows((hWnd, _) =>
                 {
-                    saveDialogHwnd = hWnd;
-                    return false; // Stop enumeration
-                }
-                return true;
-            };
+                    StringBuilder sb = new StringBuilder(DefaultWindowTextCapacity);
+                    GetWindowText(hWnd, sb, DefaultWindowTextCapacity);
+                    if (IsWindowVisible(hWnd) &&
+                        sb.ToString().IndexOf(dialogTitlePart, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        saveDialogHwnd = hWnd;
+                        return false;
+                    }
+                    return true;
+                }, IntPtr.Zero);
 
-            EnumWindows(enumProc, IntPtr.Zero);
+                if (saveDialogHwnd != IntPtr.Zero)
+                    break;
+
+                Thread.Sleep(500);
+            }
 
             if (saveDialogHwnd == IntPtr.Zero)
             {
-                logMessage = $"Save Dialog mit Titelteil '{dialogTitlePart}' nicht gefunden.";
+                logMessage = $"Save Dialog mit Titelteil '{dialogTitlePart}' nicht gefunden (Timeout nach {waitTimeoutMs / 1000}s).";
                 return false;
             }
 
@@ -600,6 +651,33 @@ namespace CopagoAutomation.Automation
         public bool IsWindowValid(BoundWindowInfo boundWindow)
         {
             return IsValidHandle(boundWindow.Handle);
+        }
+
+        /// <summary>
+        /// Gibt alle aktuell sichtbaren Top-Level-Fenster-Handles zurück.
+        /// Wird genutzt um ein neu erschienenes Fenster zu erkennen (Report-Output-Fenster).
+        /// </summary>
+        public HashSet<IntPtr> GetVisibleTopLevelWindowHandles()
+        {
+            var handles = new HashSet<IntPtr>();
+            EnumWindows((hWnd, _) =>
+            {
+                if (IsWindowVisible(hWnd))
+                    handles.Add(hWnd);
+                return true;
+            }, IntPtr.Zero);
+            return handles;
+        }
+
+        /// <summary>
+        /// Prüft ob das Fenster auf Nachrichten reagiert (nicht beschäftigt).
+        /// Gibt false zurück wenn das Fenster noch verarbeitet (z.B. Report läuft).
+        /// </summary>
+        public bool IsWindowResponsive(IntPtr hWnd, int testTimeoutMs = 200)
+        {
+            if (!IsValidHandle(hWnd)) return false;
+            return SendMessageTimeout(hWnd, WM_NULL, IntPtr.Zero, IntPtr.Zero,
+                SMTO_ABORTIFHUNG, (uint)testTimeoutMs, out _) != IntPtr.Zero;
         }
 
 

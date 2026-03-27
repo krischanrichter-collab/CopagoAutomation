@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find /c/Users/Krischan/source/repos/krischanrichter-collab/CopagoAutomation/CopagoAutomation -type d ! -path */obj* ! -path */bin*)"
+      "Bash(find /c/Users/Krischan/source/repos/krischanrichter-collab/CopagoAutomation/CopagoAutomation -type d ! -path */obj* ! -path */bin*)",
+      "Bash(dotnet build:*)"
     ]
   }
 }

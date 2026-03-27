@@ -334,7 +334,7 @@ namespace CopagoAutomation
             {
                 Mode = _settings.AbcMode,
                 SaveMode = _settings.AbcSaveMode,
-                BaseFolder = _settings.AbcBaseFolder,
+                BaseFolder = _settings.AbcBaseFolder ?? string.Empty,
                 SammelordnerPath = _settings.AbcSammelordnerPath,
                 SelectedPosValues = AbcPosList.SelectedItems.Cast<string>().ToList(),
                 DateFrom = dateRange?.from ?? AbcDateRuleSelector.DateFrom,
@@ -367,7 +367,7 @@ namespace CopagoAutomation
             {
                 Mode = _settings.XMode,
                 SaveMode = _settings.XSaveMode,
-                BaseFolder = _settings.XBaseFolder,
+                BaseFolder = _settings.XBaseFolder ?? string.Empty,
                 SammelordnerPath = _settings.XSammelordnerPath,
                 SelectedPosValues = XPosList.SelectedItems.Cast<string>().ToList(),
                 Year = year > 0 ? year : DateTime.Today.Year,
@@ -458,6 +458,8 @@ namespace CopagoAutomation
                 : (_settings?.AbcMode ?? MachineMode.Laptop);
             string modeName = GetCalibrationModeName(machineMode);
             _mainViewModel.StartCalibration(modeName, profileName);
+
+            WindowState = WindowState.Minimized;
 
             var prompt = new CalibrationPromptWindow(this, _mainViewModel);
             if (prompt.ShowDialog() == true)
