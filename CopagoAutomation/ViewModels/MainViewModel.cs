@@ -121,22 +121,15 @@ namespace CopagoAutomation.ViewModels
 			System.Drawing.Point screenPoint = _calibrationService.WindowAutomation.GetCursorScreenPosition();
 
 			IntPtr childWindow = WindowAutomation.WindowFromPoint(new WindowAutomation.POINT { X = screenPoint.X, Y = screenPoint.Y });
-			if (childWindow == IntPtr.Zero)
-				return false;
+			if (childWindow != IntPtr.Zero)
+			{
+				IntPtr rootWindow = WindowAutomation.GetAncestor(childWindow, WindowAutomation.GA_ROOT);
+				if (rootWindow != IntPtr.Zero && _calibrationService.WindowAutomation.TryBindWindowByHandle(rootWindow, out var copagoWindow))
+					boundCopagoWindow = copagoWindow;
+			}
 
-			IntPtr rootWindow = WindowAutomation.GetAncestor(childWindow, WindowAutomation.GA_ROOT);
-			if (rootWindow == IntPtr.Zero)
-				return false;
-
-			WindowAutomation.POINT clientPointWin32 = new WindowAutomation.POINT { X = screenPoint.X, Y = screenPoint.Y };
-			if (!WindowAutomation.ScreenToClient(rootWindow, ref clientPointWin32))
-				return false;
-
-			if (_calibrationService.WindowAutomation.TryBindWindowByHandle(rootWindow, out var copagoWindow))
-				boundCopagoWindow = copagoWindow;
-
-			x = clientPointWin32.X;
-			y = clientPointWin32.Y;
+			x = screenPoint.X;
+			y = screenPoint.Y;
 			return true;
 		}
 

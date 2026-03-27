@@ -119,16 +119,7 @@ var point = profile.Points.FirstOrDefault(p =>
 				{
 					existingPoint.X = x;
 					existingPoint.Y = y;
-					if (boundWindow.HasValue && boundWindow.Value.HasHandle && WindowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var rect))
-					{
-						existingPoint.RelativeX = x - rect.Left;
-						existingPoint.RelativeY = y - rect.Top;
-						existingPoint.IsRelative = true;
-					}
-					else
-					{
-						existingPoint.IsRelative = false;
-					}
+					existingPoint.IsRelative = false;
 					return;
 				}
 
@@ -136,19 +127,9 @@ var point = profile.Points.FirstOrDefault(p =>
 			{
 				Key = key,
 				X = x,
-				Y = y
+				Y = y,
+				IsRelative = false
 			};
-
-				if (boundWindow.HasValue && boundWindow.Value.HasHandle && WindowAutomation.TryGetClientRect(boundWindow.Value.Handle, out var rect2))
-				{
-					newPoint.RelativeX = x - rect2.Left;
-					newPoint.RelativeY = y - rect2.Top;
-					newPoint.IsRelative = true;
-				}
-			else
-			{
-				newPoint.IsRelative = false;
-			}
 			profile.Points.Add(newPoint);
 		}
 
