@@ -56,11 +56,19 @@ namespace CopagoAutomation.Calibration
 			},
 			new CalibrationStepDefinition
 			{
-				Key             = "OutputClose",
-				Title           = "Speichern-Button (Save-Dialog)",
+				Key             = "SaveDialogFilename",
+				Title           = "Dateiname-Feld (Save-Dialog)",
 				HotkeyDigit     = 7,
 				HotkeyText      = "Strg+Alt+7",
-				InstructionText = "Platziere die Maus mittig auf dem Speichern-Button im Save-Dialog und drücke dann Strg+Alt+7."
+				InstructionText = "Platziere die Maus mittig auf dem Dateiname-Eingabefeld im Save-Dialog und drücke dann Strg+Alt+7."
+			},
+			new CalibrationStepDefinition
+			{
+				Key             = "OutputClose",
+				Title           = "Speichern-Button (Save-Dialog)",
+				HotkeyDigit     = 8,
+				HotkeyText      = "Strg+Alt+8",
+				InstructionText = "Platziere die Maus mittig auf dem Speichern-Button im Save-Dialog und drücke dann Strg+Alt+8."
 			}
 		};
 
@@ -124,11 +132,11 @@ namespace CopagoAutomation.Calibration
 			},
 			new CalibrationStepDefinition
 			{
-				Key             = "SaveDialogPath",
-				Title           = "Speicherpfad-Feld (Save-Dialog)",
+				Key             = "SaveDialogFilename",
+				Title           = "Dateiname-Feld (Save-Dialog)",
 				HotkeyDigit     = 8,
 				HotkeyText      = "Strg+Alt+8",
-				InstructionText = "Platziere die Maus mittig auf dem Feld für den Speicherpfad im Save-Dialog und drücke dann Strg+Alt+8."
+				InstructionText = "Platziere die Maus mittig auf dem Dateiname-Eingabefeld im Save-Dialog und drücke dann Strg+Alt+8."
 			},
 			new CalibrationStepDefinition
 			{

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using CopagoAutomation.Automation;
 using CopagoAutomation.Calibration;
 using CopagoAutomation.Models;
@@ -28,7 +29,7 @@ namespace CopagoAutomation.Services
             _xAutomation = new XAutomation(_pathResolver, _calibrationService);
 		}
 
-        public List<string> StartAbcAutomation(AbcStartRequest request)
+        public List<string> StartAbcAutomation(AbcStartRequest request, CancellationToken ct = default)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
@@ -41,10 +42,10 @@ namespace CopagoAutomation.Services
                     $"Die Kalibrierung für Profil '{AbcProfileName}' im Modus '{modeName}' ist nicht vollständig.");
             }
 
-            return _abcAutomation.Run(request, modeName, AbcProfileName);
+            return _abcAutomation.Run(request, modeName, AbcProfileName, ct);
         }
 
-        public List<string> StartXAutomation(XStartRequest request)
+        public List<string> StartXAutomation(XStartRequest request, CancellationToken ct = default)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
@@ -57,7 +58,7 @@ namespace CopagoAutomation.Services
                     $"Die Kalibrierung für Profil '{XProfileName}' im Modus '{modeName}' ist nicht vollständig.");
             }
 
-            return _xAutomation.Run(request, modeName, XProfileName);
+            return _xAutomation.Run(request, modeName, XProfileName, ct);
         }
 
         private Dictionary<string, CalibrationPoint> GetRequiredAbcPoints(string modeName)

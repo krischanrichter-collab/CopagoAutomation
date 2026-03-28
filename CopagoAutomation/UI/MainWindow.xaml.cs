@@ -4,6 +4,7 @@ using CopagoAutomation.Automation;
 using System.Drawing; // For System.Drawing.Point
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
@@ -25,6 +26,8 @@ namespace CopagoAutomation
 
         private AutomationService? _automationService;
         private WindowAutomation? _windowAutomation;
+        private CancellationTokenSource? _abcCts;
+        private CancellationTokenSource? _xCts;
         private CalibrationData? _calibrationData;
         private CalibrationService? _calibrationService;
         private MainViewModel? _mainViewModel;
@@ -325,7 +328,7 @@ namespace CopagoAutomation
             await SaveSettingsAsync();
         }
 
-        private void AbcStart_Click(object sender, RoutedEventArgs e)
+        private async void AbcStart_Click(object sender, RoutedEventArgs e)
         {
             if (_automationService == null || _settings == null) return;
 
@@ -341,21 +344,36 @@ namespace CopagoAutomation
                 DateTo = dateRange?.to ?? AbcDateRuleSelector.DateTo
             };
 
+            _abcCts = new CancellationTokenSource();
+            AbcStartButton.IsEnabled = false;
+            AbcStopButton.IsEnabled = true;
             AbcLogBox.Clear();
             try
             {
-                var logs = _automationService.StartAbcAutomation(request);
+                var token = _abcCts.Token;
+                var logs = await Task.Run(() => _automationService.StartAbcAutomation(request, token), token);
                 foreach (var log in logs)
                     AbcLogBox.AppendText(log + Environment.NewLine);
+            }
+            catch (OperationCanceledException)
+            {
+                AbcLogBox.AppendText("Automation abgebrochen." + Environment.NewLine);
             }
             catch (Exception ex)
             {
                 AbcLogBox.AppendText($"Fehler: {ex.Message}{Environment.NewLine}");
                 MessageBox.Show($"Fehler bei der ABC-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            finally
+            {
+                AbcStartButton.IsEnabled = true;
+                AbcStopButton.IsEnabled = false;
+                _abcCts.Dispose();
+                _abcCts = null;
+            }
         }
 
-        private void XStart_Click(object sender, RoutedEventArgs e)
+        private async void XStart_Click(object sender, RoutedEventArgs e)
         {
             if (_automationService == null || _settings == null) return;
 
@@ -375,30 +393,43 @@ namespace CopagoAutomation
                 ToWeek = toWeek
             };
 
+            _xCts = new CancellationTokenSource();
+            XStartButton.IsEnabled = false;
+            XStopButton.IsEnabled = true;
             XLogBox.Clear();
             try
             {
-                var logs = _automationService.StartXAutomation(request);
+                var token = _xCts.Token;
+                var logs = await Task.Run(() => _automationService.StartXAutomation(request, token), token);
                 foreach (var log in logs)
                     XLogBox.AppendText(log + Environment.NewLine);
+            }
+            catch (OperationCanceledException)
+            {
+                XLogBox.AppendText("Automation abgebrochen." + Environment.NewLine);
             }
             catch (Exception ex)
             {
                 XLogBox.AppendText($"Fehler: {ex.Message}{Environment.NewLine}");
                 MessageBox.Show($"Fehler bei der X-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            finally
+            {
+                XStartButton.IsEnabled = true;
+                XStopButton.IsEnabled = false;
+                _xCts.Dispose();
+                _xCts = null;
+            }
         }
 
         private void AbcStop_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: Implement stop logic for ABC automation
-            MessageBox.Show("ABC Automation Stop (Not Implemented)", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            _abcCts?.Cancel();
         }
 
         private void XStop_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: Implement stop logic for X automation
-            MessageBox.Show("X Automation Stop (Not Implemented)", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            _xCts?.Cancel();
         }
 
         private async void AbcResetPos_Click(object sender, RoutedEventArgs e)

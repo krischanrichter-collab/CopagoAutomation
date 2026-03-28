@@ -183,14 +183,17 @@
                                         Height="34"
                                         Margin="0,0,12,0"
                                         Click="AbcCalibration_Click"/>
-								<Button Content="Start"
+								<Button x:Name="AbcStartButton"
+                                        Content="Start"
                                         Width="140"
                                         Height="34"
                                         Margin="0,0,12,0"
                                         Click="AbcStart_Click"/>
-								<Button Content="Stop"
+								<Button x:Name="AbcStopButton"
+                                        Content="Stop"
                                         Width="140"
                                         Height="34"
+                                        IsEnabled="False"
                                         Click="AbcStop_Click"/>
 							</StackPanel>
 
@@ -376,14 +379,17 @@
                                         Height="34"
                                         Margin="0,0,12,0"
                                         Click="XCalibration_Click"/>
-								<Button Content="Start"
+								<Button x:Name="XStartButton"
+                                        Content="Start"
                                         Width="140"
                                         Height="34"
                                         Margin="0,0,12,0"
                                         Click="XStart_Click"/>
-								<Button Content="Stop"
+								<Button x:Name="XStopButton"
+                                        Content="Stop"
                                         Width="140"
                                         Height="34"
+                                        IsEnabled="False"
                                         Click="XStop_Click"/>
 							</StackPanel>
 
