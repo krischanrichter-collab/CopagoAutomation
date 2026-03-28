@@ -227,7 +227,7 @@ namespace CopagoAutomation.Automation
                     ClickPoint(runReportPoint, boundWindow);
                     logs.Add($"Report für POS {currentPos} gestartet");
 
-                    if (!WaitForReportReady(boundWindow, logs, ct))
+                    if (!WaitForReportReady(boundWindow, logs, out IntPtr outputWindowHandle, ct))
                         return logs;
 
                     var windowsBeforeSaveDialog = _windowAutomation.GetVisibleTopLevelWindowHandles();
@@ -252,6 +252,10 @@ namespace CopagoAutomation.Automation
 
                     ClickPoint(outputClosePoint, boundWindow);
                     logs.Add($"Gespeichert für POS {currentPos}");
+                    Sleep(DefaultActionDelayMs);
+
+                    _windowAutomation.CloseWindow(outputWindowHandle);
+                    logs.Add("Report-Output-Fenster geschlossen.");
                     Sleep(DefaultActionDelayMs);
                 }
                 catch (Exception ex)
@@ -352,8 +356,9 @@ namespace CopagoAutomation.Automation
         /// Erkennung: Vorher alle sichtbaren Fenster erfassen, dann warten bis ein neues erscheint.
         /// Das ist unabhängig von Fokus oder aktivem Fenster.
         /// </summary>
-        private bool WaitForReportReady(BoundWindowInfo boundWindow, List<string> logs, CancellationToken ct = default)
+        private bool WaitForReportReady(BoundWindowInfo boundWindow, List<string> logs, out IntPtr outputWindowHandle, CancellationToken ct = default)
         {
+            outputWindowHandle = IntPtr.Zero;
             logs.Add("Warte auf Fertigstellung des Reports...");
 
             var windowsBefore = _windowAutomation.GetVisibleTopLevelWindowHandles();
@@ -372,10 +377,12 @@ namespace CopagoAutomation.Automation
                 }
 
                 var windowsNow = _windowAutomation.GetVisibleTopLevelWindowHandles();
-                if (windowsNow.Any(h => !windowsBefore.Contains(h)))
+                var newHandle = windowsNow.FirstOrDefault(h => !windowsBefore.Contains(h));
+                if (newHandle != IntPtr.Zero)
                 {
                     ct.WaitHandle.WaitOne(ReportReadyPollIntervalMs); // Kurz warten damit das Fenster vollständig gerendert ist
                     ct.ThrowIfCancellationRequested();
+                    outputWindowHandle = newHandle;
                     logs.Add("Report-Output-Fenster erkannt, Report fertig ausgewertet.");
                     return true;
                 }

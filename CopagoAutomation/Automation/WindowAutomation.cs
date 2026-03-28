@@ -184,6 +184,10 @@ namespace CopagoAutomation.Automation
         [DllImport("user32.dll", SetLastError = true)]
         private static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam, uint fuFlags, uint uTimeout, out IntPtr lpdwResult);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        private const uint WM_CLOSE  = 0x0010;
         private const uint WM_SETTEXT = 0x000C;
         private const uint BM_CLICK = 0x00F5;
         private const uint WM_NULL = 0x0000;
@@ -667,6 +671,14 @@ namespace CopagoAutomation.Automation
                 return true;
             }, IntPtr.Zero);
             return handles;
+        }
+
+        public bool CloseWindow(IntPtr hWnd)
+        {
+            if (!IsValidHandle(hWnd))
+                return false;
+            PostMessage(hWnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+            return true;
         }
 
         /// <summary>

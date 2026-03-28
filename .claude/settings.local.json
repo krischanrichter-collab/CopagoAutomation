@@ -5,7 +5,8 @@
       "Bash(dotnet build:*)",
       "Bash(powershell -Command \"[System.IO.File]::ReadAllText\\(''c:\\\\Users\\\\k.richter\\\\Desktop\\\\VSCode Projekte\\\\CopagoAutomation\\\\CopagoAutomation\\\\Calibration\\\\CalibrationDefinitions.cs'', [System.Text.Encoding]::UTF8\\).Substring\\(2100, 400\\)\")",
       "Bash(powershell -Command \":*)",
-      "Bash(powershell -Command \"Select-String -Path ''c:\\\\Users\\\\k.richter\\\\Desktop\\\\VSCode Projekte\\\\CopagoAutomation\\\\CopagoAutomation\\\\UI\\\\MainWindow.xaml'' -Pattern ''AbcStart|AbcStop|XStart|XStop'' | Select-Object LineNumber, Line\")"
+      "Bash(powershell -Command \"Select-String -Path ''c:\\\\Users\\\\k.richter\\\\Desktop\\\\VSCode Projekte\\\\CopagoAutomation\\\\CopagoAutomation\\\\UI\\\\MainWindow.xaml'' -Pattern ''AbcStart|AbcStop|XStart|XStop'' | Select-Object LineNumber, Line\")",
+      "Bash(powershell -Command \"Select-String -Path ''c:\\\\Users\\\\k.richter\\\\Desktop\\\\VSCode Projekte\\\\CopagoAutomation\\\\CopagoAutomation\\\\Calibration\\\\CalibrationDefinitions.cs'' -Pattern ''OutputClose''\")"
     ]
   }
 }
