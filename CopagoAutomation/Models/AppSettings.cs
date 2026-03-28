@@ -30,6 +30,10 @@ namespace CopagoAutomation.Models
 		// Multi-Auswahl gespeicherter POS
 		public List<string> SelectedPosIds { get; set; } = new();
 
+		// Gespeicherte POS-Auswahl pro Report
+		public List<string> SelectedAbcPosValues { get; set; } = new();
+		public List<string> SelectedXPosValues { get; set; } = new();
+
 		// =========================================
 		// 🔥 NEUE SPEICHER-ARCHITEKTUR
 		// =========================================

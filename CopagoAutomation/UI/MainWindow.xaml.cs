@@ -64,6 +64,9 @@ namespace CopagoAutomation
             AbcSammelordner.LostFocus += AbcStorageFields_LostFocus;
             XSammelordner.LostFocus += XStorageFields_LostFocus;
 
+            AbcPosList.SelectionChanged += AbcPosList_SelectionChanged;
+            XPosList.SelectionChanged += XPosList_SelectionChanged;
+
             LoadPosEntries();
             LoadSettings();
 
@@ -127,6 +130,7 @@ namespace CopagoAutomation
             UpdateAbcSaveModeUi();
             ApplyXStorageSettingsToUi();
             UpdateXSaveModeUi();
+            RestorePosSelections();
         }
 
         private void ApplyXStorageSettingsToUi()
@@ -327,18 +331,35 @@ namespace CopagoAutomation
 
         private async void AbcPosList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (_settings == null || AbcPosList.SelectedItem == null) return;
+            if (_settings == null) return;
 
-            _settings.LastPosId = AbcPosList.SelectedItem.ToString();
+            _settings.SelectedAbcPosValues = AbcPosList.SelectedItems.Cast<string>().ToList();
             await SaveSettingsAsync();
         }
 
         private async void XPosList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (_settings == null || XPosList.SelectedItem == null) return;
+            if (_settings == null) return;
 
-            _settings.LastPosId = XPosList.SelectedItem.ToString();
+            _settings.SelectedXPosValues = XPosList.SelectedItems.Cast<string>().ToList();
             await SaveSettingsAsync();
+        }
+
+        private void RestorePosSelections()
+        {
+            if (_settings == null) return;
+
+            AbcPosList.SelectionChanged -= AbcPosList_SelectionChanged;
+            foreach (var item in AbcPosList.Items)
+                if (_settings.SelectedAbcPosValues.Contains(item.ToString()))
+                    AbcPosList.SelectedItems.Add(item);
+            AbcPosList.SelectionChanged += AbcPosList_SelectionChanged;
+
+            XPosList.SelectionChanged -= XPosList_SelectionChanged;
+            foreach (var item in XPosList.Items)
+                if (_settings.SelectedXPosValues.Contains(item.ToString()))
+                    XPosList.SelectedItems.Add(item);
+            XPosList.SelectionChanged += XPosList_SelectionChanged;
         }
 
         private async void AbcStart_Click(object sender, RoutedEventArgs e)
