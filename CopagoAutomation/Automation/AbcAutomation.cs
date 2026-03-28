@@ -229,7 +229,7 @@ namespace CopagoAutomation.Automation
 
                     ClickPoint(outputClosePoint, boundWindow);
                     logs.Add($"Gespeichert für POS {currentPos}");
-                    Sleep(DefaultActionDelayMs);
+                    Sleep(DefaultSaveDialogWaitMs); // Save-Dialog Zeit zum Schließen geben
 
                     logs.Add("Warte auf Schließen des Report-Output-Fensters...");
                     _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);

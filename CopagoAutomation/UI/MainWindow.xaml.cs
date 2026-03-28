@@ -403,6 +403,7 @@ namespace CopagoAutomation
                 SelectedPosValues = XPosList.SelectedItems.Cast<string>().ToList(),
                 Year = year > 0 ? year : DateTime.Today.Year,
                 CumPercent = cumPercent,
+                FromWeek = toWeek,
                 ToWeek = toWeek
             };
 

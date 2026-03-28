@@ -684,7 +684,21 @@ namespace CopagoAutomation.Automation
         public bool CloseWindowAndWait(IntPtr hWnd, int timeoutMs = 5000, CancellationToken ct = default)
         {
             if (!IsValidHandle(hWnd)) return true;
-            PostMessage(hWnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+
+            // Fenster aktivieren, damit Alt+F4 zuverlässig verarbeitet wird
+            TryActivateWindow(hWnd);
+            Thread.Sleep(150);
+
+            if (!IsValidHandle(hWnd)) return true;
+
+            // Alt+F4 senden (zuverlässiger als WM_CLOSE für fremde Prozesse)
+            const ushort VK_MENU = 0x12;
+            const ushort VK_F4   = 0x73;
+            KeyDown(VK_MENU);
+            Thread.Sleep(30);
+            KeyPress(VK_F4);
+            Thread.Sleep(30);
+            KeyUp(VK_MENU);
 
             var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
             while (DateTime.UtcNow < deadline)
@@ -693,6 +707,12 @@ namespace CopagoAutomation.Automation
                 ct.WaitHandle.WaitOne(100);
                 if (ct.IsCancellationRequested) return false;
             }
+
+            // Fallback: WM_CLOSE
+            if (IsWindow(hWnd))
+                PostMessage(hWnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+
+            Thread.Sleep(300);
             return !IsWindow(hWnd);
         }
 

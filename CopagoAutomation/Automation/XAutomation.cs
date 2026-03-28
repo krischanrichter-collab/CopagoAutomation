@@ -157,13 +157,8 @@ namespace CopagoAutomation.Automation
 
                     ClickPoint(yearPoint, boundWindow);
                     Sleep(DefaultActionDelayMs);
-
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
-
                     TypeText(request.Year.ToString());
                     Sleep(DefaultActionDelayMs);
-
                     PressKey(VK_RETURN);
                     Sleep(DefaultActionDelayMs);
 
@@ -172,13 +167,8 @@ namespace CopagoAutomation.Automation
 
                     ClickPoint(kwFromPoint, boundWindow);
                     Sleep(DefaultActionDelayMs);
-
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
-
                     TypeText(request.FromWeek.ToString());
                     Sleep(DefaultActionDelayMs);
-
                     PressKey(VK_RETURN);
                     Sleep(DefaultActionDelayMs);
 
@@ -187,13 +177,8 @@ namespace CopagoAutomation.Automation
 
                     ClickPoint(toWeekPoint, boundWindow);
                     Sleep(DefaultActionDelayMs);
-
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
-
                     TypeText(request.ToWeek.ToString());
                     Sleep(DefaultActionDelayMs);
-
                     PressKey(VK_RETURN);
                     Sleep(DefaultActionDelayMs);
 
@@ -263,7 +248,7 @@ namespace CopagoAutomation.Automation
 
                     ClickPoint(outputClosePoint, boundWindow);
                     logs.Add($"Gespeichert für POS {currentPos}");
-                    Sleep(DefaultActionDelayMs);
+                    Sleep(DefaultSaveDialogWaitMs); // Save-Dialog Zeit zum Schließen geben
 
                     logs.Add("Warte auf Schließen des Report-Output-Fensters...");
                     _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
