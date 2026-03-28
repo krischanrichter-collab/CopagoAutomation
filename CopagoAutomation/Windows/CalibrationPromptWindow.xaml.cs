@@ -40,10 +40,10 @@ namespace CopagoAutomation.Windows
             {
                 _globalHotkeyService = new GlobalHotkeyService(handle);
                 _globalHotkeyService.HotkeyPressed += GlobalHotkeyService_HotkeyPressed;
-                if (!_globalHotkeyService.RegisterHotkeys(1, 9))
+                if (!_globalHotkeyService.RegisterHotkeys(1, 10))
                 {
                     MessageBox.Show(
-                        "Fehler beim Registrieren der Hotkeys. Möglicherweise sind Strg+Alt+1–9 bereits belegt.",
+                        "Fehler beim Registrieren der Hotkeys. Möglicherweise sind Strg+Alt+Q–P bereits belegt.",
                         "Hotkey Fehler",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);

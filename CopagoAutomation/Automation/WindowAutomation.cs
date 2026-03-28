@@ -681,6 +681,21 @@ namespace CopagoAutomation.Automation
             return true;
         }
 
+        public bool CloseWindowAndWait(IntPtr hWnd, int timeoutMs = 5000, CancellationToken ct = default)
+        {
+            if (!IsValidHandle(hWnd)) return true;
+            PostMessage(hWnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+
+            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (!IsWindow(hWnd)) return true;
+                ct.WaitHandle.WaitOne(100);
+                if (ct.IsCancellationRequested) return false;
+            }
+            return !IsWindow(hWnd);
+        }
+
         /// <summary>
         /// Prüft ob das Fenster auf Nachrichten reagiert (nicht beschäftigt).
         /// Gibt false zurück wenn das Fenster noch verarbeitet (z.B. Report läuft).

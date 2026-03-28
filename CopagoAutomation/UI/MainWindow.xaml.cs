@@ -85,6 +85,8 @@ namespace CopagoAutomation
 
                 _automationService = new AutomationService(_calibrationService, new PathResolver(_settings));
                 _mainViewModel = new MainViewModel(_calibrationService);
+
+                LoadXYearComboBox();
             }
             catch (Exception ex)
             {
@@ -140,6 +142,15 @@ namespace CopagoAutomation
             XSammelordner.Text = _settings.XSammelordnerPath;
 
             UpdateXSaveModeUi();
+        }
+
+        private void LoadXYearComboBox()
+        {
+            int currentYear = DateTime.Today.Year;
+            XYear.Items.Clear();
+            for (int y = currentYear - 3; y <= currentYear + 1; y++)
+                XYear.Items.Add(y);
+            XYear.SelectedItem = currentYear;
         }
 
         private void LoadPosEntries()
@@ -296,6 +307,7 @@ namespace CopagoAutomation
                     await SaveSettingsAsync();
                 }
             }
+            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
         }
 
         private async void XBrowseButton_Click(object sender, RoutedEventArgs e)
@@ -310,6 +322,7 @@ namespace CopagoAutomation
                     await SaveSettingsAsync();
                 }
             }
+            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
         }
 
         private async void AbcPosList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -377,7 +390,7 @@ namespace CopagoAutomation
         {
             if (_automationService == null || _settings == null) return;
 
-            int.TryParse(XYear.Text, out int year);
+            int year = XYear.SelectedItem is int y ? y : DateTime.Today.Year;
             int.TryParse(XCumPercent.Text, out int cumPercent);
             int.TryParse(XToWeek.Text, out int toWeek);
 
@@ -453,8 +466,9 @@ namespace CopagoAutomation
             {
                 _settings.AbcSammelordnerPath = dialog.FolderName;
                 AbcSammelordner.Text = dialog.FolderName;
-                       await SaveSettingsAsync();
+                await SaveSettingsAsync();
             }
+            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
         }
 
         private async void XBrowseSammelordner_Click(object sender, RoutedEventArgs e)
@@ -468,6 +482,7 @@ namespace CopagoAutomation
                 XSammelordner.Text = dialog.FolderName;
                 await SaveSettingsAsync();
             }
+            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
         }
 
         private void XCalibration_Click(object sender, RoutedEventArgs e)

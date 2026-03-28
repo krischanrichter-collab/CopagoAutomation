@@ -8,8 +8,8 @@ namespace CopagoAutomation.Controls
 {
 		public partial class DateRuleSelector : UserControl
 		{
-			public DateTime DateFrom => OneTimeFrom?.SelectedDate ?? DateTime.Today;
-			public DateTime DateTo => OneTimeTo?.SelectedDate ?? DateTime.Today;
+			public DateTime DateFrom => OneTimeFrom?.SelectedDate ?? DateTime.Today.AddDays(-1);
+			public DateTime DateTo => OneTimeTo?.SelectedDate ?? DateTime.Today.AddDays(-1);
 
 			public DateRuleSelector()
 			{
@@ -27,8 +27,8 @@ namespace CopagoAutomation.Controls
 			// --- Defaults ---
 			ModeOneTime.IsChecked = true; // default Modus
 
-			OneTimeFrom.SelectedDate = DateTime.Today;
-			OneTimeTo.SelectedDate = DateTime.Today;
+			OneTimeFrom.SelectedDate = DateTime.Today.AddDays(-1);
+			OneTimeTo.SelectedDate = DateTime.Today.AddDays(-1);
 
 			ValidFrom.SelectedDate = DateTime.Today;
 			ValidTo.SelectedDate = DateTime.Today.AddMonths(3);

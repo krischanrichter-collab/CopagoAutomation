@@ -15,8 +15,11 @@ namespace CopagoAutomation.Services
         private const uint MOD_ALT     = 0x0001;
         private const uint MOD_CONTROL = 0x0002;
 
-        // IDs: 9001 = Ctrl+Alt+1, 9002 = Ctrl+Alt+2, ..., 9009 = Ctrl+Alt+9
+        // IDs: 9001 = Ctrl+Alt+Q, 9002 = Ctrl+Alt+W, ..., 9010 = Ctrl+Alt+P
         private const int HOTKEY_ID_BASE = 9000;
+
+        // Deutsche Tastatur, obere Reihe: Q W E R T Z U I O P (Index 1–10)
+        private static readonly uint[] HotkeyVkCodes = { 0, 0x51, 0x57, 0x45, 0x52, 0x54, 0x5A, 0x55, 0x49, 0x4F, 0x50 };
 
         private readonly IntPtr _windowHandle;
         private HwndSource? _hwndSource;
@@ -24,7 +27,7 @@ namespace CopagoAutomation.Services
         private int _registeredFrom;
         private int _registeredTo;
 
-        /// <summary>Fired when a registered hotkey is pressed. The int argument is the digit (1–9).</summary>
+        /// <summary>Fired when a registered hotkey is pressed. The int argument is the 1-based step index.</summary>
         public event EventHandler<int>? HotkeyPressed;
 
         public GlobalHotkeyService(IntPtr windowHandle)
@@ -34,17 +37,16 @@ namespace CopagoAutomation.Services
             _hwndSource?.AddHook(WndProc);
         }
 
-        /// <summary>Registers Ctrl+Alt+<fromDigit> through Ctrl+Alt+<toDigit>.</summary>
-        public bool RegisterHotkeys(int fromDigit = 1, int toDigit = 9)
+        /// <summary>Registers Ctrl+Alt+Q through Ctrl+Alt+P (indices 1–10).</summary>
+        public bool RegisterHotkeys(int fromIndex = 1, int toIndex = 10)
         {
-            _registeredFrom = fromDigit;
-            _registeredTo   = toDigit;
+            _registeredFrom = fromIndex;
+            _registeredTo   = toIndex;
 
             bool allOk = true;
-            for (int digit = fromDigit; digit <= toDigit; digit++)
+            for (int i = fromIndex; i <= toIndex && i < HotkeyVkCodes.Length; i++)
             {
-                uint vk = (uint)(0x30 + digit); // VK_1 = 0x31 … VK_9 = 0x39
-                if (!RegisterHotKey(_windowHandle, HOTKEY_ID_BASE + digit, MOD_CONTROL | MOD_ALT, vk))
+                if (!RegisterHotKey(_windowHandle, HOTKEY_ID_BASE + i, MOD_CONTROL | MOD_ALT, HotkeyVkCodes[i]))
                     allOk = false;
             }
             return allOk;
@@ -52,8 +54,8 @@ namespace CopagoAutomation.Services
 
         private void UnregisterAll()
         {
-            for (int digit = _registeredFrom; digit <= _registeredTo; digit++)
-                UnregisterHotKey(_windowHandle, HOTKEY_ID_BASE + digit);
+            for (int i = _registeredFrom; i <= _registeredTo; i++)
+                UnregisterHotKey(_windowHandle, HOTKEY_ID_BASE + i);
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -61,10 +63,10 @@ namespace CopagoAutomation.Services
             const int WM_HOTKEY = 0x0312;
             if (msg == WM_HOTKEY)
             {
-                int digit = wParam.ToInt32() - HOTKEY_ID_BASE;
-                if (digit >= 1 && digit <= 9)
+                int index = wParam.ToInt32() - HOTKEY_ID_BASE;
+                if (index >= 1 && index <= 10)
                 {
-                    HotkeyPressed?.Invoke(this, digit);
+                    HotkeyPressed?.Invoke(this, index);
                     handled = true;
                 }
             }

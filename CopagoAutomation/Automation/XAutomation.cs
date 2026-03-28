@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -87,6 +88,8 @@ namespace CopagoAutomation.Automation
             if (runReportPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'RunReport' fehlt."); return logs; }
             var outputSavePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputSave", boundWindow);
             if (outputSavePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'OutputSave' fehlt."); return logs; }
+            var saveDialogPathPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "SaveDialogPath", boundWindow);
+            if (saveDialogPathPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'SaveDialogPath' fehlt."); return logs; }
             var saveDialogFilenamePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "SaveDialogFilename", boundWindow);
             if (saveDialogFilenamePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'SaveDialogFilename' fehlt."); return logs; }
             var outputClosePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputClose", boundWindow);
@@ -158,13 +161,10 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    SelectAll();
-                    Sleep(80);
-
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
-
                     TypeText(request.Year.ToString());
+                    Sleep(DefaultActionDelayMs);
+
+                    PressKey(VK_RETURN);
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -176,13 +176,10 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    SelectAll();
-                    Sleep(80);
-
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
-
                     TypeText(request.FromWeek.ToString());
+                    Sleep(DefaultActionDelayMs);
+
+                    PressKey(VK_RETURN);
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -194,13 +191,10 @@ namespace CopagoAutomation.Automation
                     if (!EnsureBoundWindowReady(boundWindow, logs))
                         return logs;
 
-                    SelectAll();
-                    Sleep(80);
-
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
-
                     TypeText(request.ToWeek.ToString());
+                    Sleep(DefaultActionDelayMs);
+
+                    PressKey(VK_RETURN);
                     Sleep(DefaultActionDelayMs);
 
                     if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -239,7 +233,24 @@ namespace CopagoAutomation.Automation
 
                     string reportName = "X-Liste";
                     string filePath = _pathResolver.ResolvePath(reportName, currentPos, request.SaveMode);
+                    string fileDir = Path.GetDirectoryName(filePath) ?? string.Empty;
+                    string fileName = Path.GetFileName(filePath);
                     logs.Add($"Versuche, in Datei zu speichern: {filePath}");
+
+                    if (!string.IsNullOrEmpty(fileDir))
+                        Directory.CreateDirectory(fileDir);
+
+                    ClickPoint(saveDialogPathPoint, boundWindow);
+                    Sleep(DefaultActionDelayMs);
+
+                    _windowAutomation.SelectAll();
+                    Sleep(80);
+
+                    _windowAutomation.TypeText(fileDir);
+                    Sleep(DefaultActionDelayMs);
+
+                    _windowAutomation.KeyPress(0x0D); // VK_RETURN – in Ordner navigieren
+                    Sleep(DefaultActionDelayMs);
 
                     ClickPoint(saveDialogFilenamePoint, boundWindow);
                     Sleep(DefaultActionDelayMs);
@@ -247,16 +258,20 @@ namespace CopagoAutomation.Automation
                     _windowAutomation.SelectAll();
                     Sleep(80);
 
-                    _windowAutomation.TypeText(filePath);
+                    _windowAutomation.TypeText(fileName);
                     Sleep(DefaultActionDelayMs);
 
                     ClickPoint(outputClosePoint, boundWindow);
                     logs.Add($"Gespeichert für POS {currentPos}");
                     Sleep(DefaultActionDelayMs);
 
-                    _windowAutomation.CloseWindow(outputWindowHandle);
+                    logs.Add("Warte auf Schließen des Report-Output-Fensters...");
+                    _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
                     logs.Add("Report-Output-Fenster geschlossen.");
-                    Sleep(DefaultActionDelayMs);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {

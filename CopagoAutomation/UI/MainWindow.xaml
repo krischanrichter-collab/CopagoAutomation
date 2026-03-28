@@ -285,7 +285,7 @@
                                          Margin="0,10,0,0"
                                          Width="180"/>
 
-								<TextBlock Text="Bis KW (1-52):" Grid.Row="2" Grid.Column="0" Margin="0,10,0,0" VerticalAlignment="Center"/>
+								<TextBlock Text="KW (1-52):" Grid.Row="2" Grid.Column="0" Margin="0,10,0,0" VerticalAlignment="Center"/>
 								<TextBox x:Name="XToWeek"
                                          Grid.Row="2" Grid.Column="1"
                                          Margin="0,10,0,0"
