@@ -217,7 +217,8 @@ namespace CopagoAutomation.Automation
                         return logs;
 
                     string reportName = "X-Liste";
-                    string filePath = _pathResolver.ResolvePath(reportName, currentPos, request.SaveMode);
+                    string dateLabel = $"KW{request.ToWeek}";
+                    string filePath = _pathResolver.ResolvePath(reportName, currentPos, request.SaveMode, dateLabel);
                     string fileDir = Path.GetDirectoryName(filePath) ?? string.Empty;
                     string fileName = Path.GetFileName(filePath);
                     logs.Add($"Versuche, in Datei zu speichern: {filePath}");

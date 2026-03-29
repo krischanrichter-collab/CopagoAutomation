@@ -13,7 +13,7 @@ namespace CopagoAutomation.Services
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
-        public string ResolvePath(string reportName, string posId, SaveMode saveMode)
+        public string ResolvePath(string reportName, string posId, SaveMode saveMode, string dateLabel = "")
         {
             string? basePath;
             string reportLabel;
@@ -40,16 +40,17 @@ namespace CopagoAutomation.Services
                 throw new InvalidOperationException($"Pfad für {reportLabel} im {modeLabel} ist nicht konfiguriert.");
             }
 
+            string fileSuffix = string.IsNullOrWhiteSpace(dateLabel) ? "" : $"_{dateLabel}";
+            string baseFileName = $"{reportName}_{posId}{fileSuffix}.pdf";
+
             if (saveMode == SaveMode.SemcoUpload)
             {
                 string directory = Path.Combine(basePath, posId);
-                string fileName  = $"{reportName}_{posId}.pdf";
-                return Path.Combine(directory, fileName);
+                return Path.Combine(directory, baseFileName);
             }
             else if (saveMode == SaveMode.Alternativ)
             {
-                string fileName = $"{reportName}_{posId}.pdf";
-                return Path.Combine(basePath, fileName);
+                return Path.Combine(basePath, baseFileName);
             }
             else
             {

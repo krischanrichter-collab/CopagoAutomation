@@ -158,7 +158,8 @@ namespace CopagoAutomation.Automation
                     if (!WaitForSaveDialog(windowsBeforeSaveDialog, logs, out _, ct: ct))
                         return logs;
 
-                    string filePath = _pathResolver.ResolvePath("Stundenleistung", currentPos, request.SaveMode);
+                    string dateLabel = request.Date.ToString("dd.MM.yy", CultureInfo.InvariantCulture);
+                    string filePath = _pathResolver.ResolvePath("Stundenleistung", currentPos, request.SaveMode, dateLabel);
                     string fileDir  = Path.GetDirectoryName(filePath) ?? string.Empty;
                     string fileName = Path.GetFileName(filePath);
                     logs.Add($"Versuche, in Datei zu speichern: {filePath}");

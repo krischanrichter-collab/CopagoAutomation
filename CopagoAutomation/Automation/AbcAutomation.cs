@@ -198,7 +198,8 @@ namespace CopagoAutomation.Automation
                         return logs;
 
                     string reportName = "ABC_Analyse";
-                    string filePath = _pathResolver.ResolvePath(reportName, currentPos, request.SaveMode);
+                    string dateLabel = $"{request.DateFrom.ToString("dd.MM.yy", CultureInfo.InvariantCulture)} bis {request.DateTo.ToString("dd.MM.yy", CultureInfo.InvariantCulture)}";
+                    string filePath = _pathResolver.ResolvePath(reportName, currentPos, request.SaveMode, dateLabel);
                     string fileDir = Path.GetDirectoryName(filePath) ?? string.Empty;
                     string fileName = Path.GetFileName(filePath);
                     logs.Add($"Versuche, in Datei zu speichern: {filePath}");
