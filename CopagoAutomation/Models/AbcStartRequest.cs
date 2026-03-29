@@ -13,6 +13,11 @@ namespace CopagoAutomation.Models
 
         public DateTime DateFrom { get; set; }
         public DateTime DateTo { get; set; }
+        /// <summary>
+        /// Wird bei "Wiederkehrend" gesetzt. Jeder Eintrag wird als DateFrom = DateTo verwendet.
+        /// Ist null oder leer → einmaliger Zeitraum mit DateFrom/DateTo.
+        /// </summary>
+        public List<DateTime>? OccurrenceDates { get; set; }
 		public List<string> SelectedPosValues { get; set; } = new();
 	}
 }

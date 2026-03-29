@@ -96,7 +96,7 @@ namespace CopagoAutomation
                 _mainViewModel = new MainViewModel(_calibrationService);
 
                 LoadXYearComboBox();
-                StundenDatum.SelectedDate = DateTime.Today.AddDays(-1);
+                // StundenDateSelector setzt sein Default-Datum selbst beim Laden
             }
             catch (Exception ex)
             {
@@ -383,15 +383,18 @@ namespace CopagoAutomation
             if (_automationService == null || _settings == null) return;
 
             var dateRange = AbcDateRuleSelector.GetOneTimeRange();
+            var occurrences = AbcDateRuleSelector.GenerateOccurrences();
+
             var request = new AbcStartRequest
             {
-                Mode = _settings.AbcMode,
-                SaveMode = _settings.AbcSaveMode,
-                BaseFolder = _settings.AbcBaseFolder ?? string.Empty,
-                SammelordnerPath = _settings.AbcSammelordnerPath,
+                Mode              = _settings.AbcMode,
+                SaveMode          = _settings.AbcSaveMode,
+                BaseFolder        = _settings.AbcBaseFolder ?? string.Empty,
+                SammelordnerPath  = _settings.AbcSammelordnerPath,
                 SelectedPosValues = AbcPosList.SelectedItems.Cast<string>().ToList(),
-                DateFrom = dateRange?.from ?? AbcDateRuleSelector.DateFrom,
-                DateTo = dateRange?.to ?? AbcDateRuleSelector.DateTo
+                DateFrom          = dateRange?.from ?? AbcDateRuleSelector.DateFrom,
+                DateTo            = dateRange?.to   ?? AbcDateRuleSelector.DateTo,
+                OccurrenceDates   = occurrences.Count > 0 ? occurrences : null
             };
 
             _abcCts = new CancellationTokenSource();
@@ -645,7 +648,7 @@ namespace CopagoAutomation
                 BaseFolder       = _settings.StundenleistungBaseFolder ?? string.Empty,
                 SammelordnerPath = _settings.StundenleistungSammelordnerPath,
                 SelectedPosValues = StundenPosList.SelectedItems.Cast<string>().ToList(),
-                Date             = StundenDatum.SelectedDate ?? DateTime.Today.AddDays(-1)
+                Dates            = StundenDateSelector.GetDates()
             };
 
             _stundenCts = new CancellationTokenSource();

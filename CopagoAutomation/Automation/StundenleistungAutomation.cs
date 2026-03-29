@@ -55,6 +55,12 @@ namespace CopagoAutomation.Automation
                 return logs;
             }
 
+            if (request.Dates == null || !request.Dates.Any())
+            {
+                logs.Add("Fehler: Kein Datum ausgewählt.");
+                return logs;
+            }
+
             if (!_windowAutomation.TryBindWindowByTitleContains(CopagoWindowTitlePart, out var boundWindow))
             {
                 logs.Add($"Fehler: Copago Fenster konnte nicht gefunden werden. Erwarteter Titelteil: '{CopagoWindowTitlePart}'");
@@ -87,11 +93,9 @@ namespace CopagoAutomation.Automation
             var outputClosePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputClose", boundWindow);
             if (outputClosePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'OutputClose' fehlt."); return logs; }
 
-            string dateText = request.Date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
-
             logs.Add("Stundenleistung Automation gestartet");
             logs.Add($"Gebundenes Fenster: {boundWindow.Title}");
-            logs.Add($"Datum: {dateText}");
+            logs.Add($"Datumseinträge: {request.Dates.Count}");
             logs.Add($"POS Anzahl: {request.SelectedPosValues.Count}");
 
             foreach (var pos in request.SelectedPosValues)
@@ -103,101 +107,106 @@ namespace CopagoAutomation.Automation
                 }
 
                 string currentPos = pos.Trim();
-                ct.ThrowIfCancellationRequested();
-                logs.Add($"POS {currentPos} wird verarbeitet");
 
-                try
+                foreach (var date in request.Dates)
                 {
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
+                    string currentDateText = date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
+                    ct.ThrowIfCancellationRequested();
+                    logs.Add($"POS {currentPos} / Datum {currentDateText} wird verarbeitet");
 
-                    // Filiale (POS) eintragen
-                    ClickPoint(posPoint, boundWindow);
-                    Sleep(DefaultActionDelayMs);
+                    try
+                    {
+                        if (!EnsureBoundWindowReady(boundWindow, logs))
+                            return logs;
 
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
+                        // Filiale (POS) eintragen
+                        ClickPoint(posPoint, boundWindow);
+                        Sleep(DefaultActionDelayMs);
 
-                    _windowAutomation.SelectAll();
-                    Sleep(80);
-                    _windowAutomation.TypeText(currentPos);
-                    Sleep(120);
-                    _windowAutomation.KeyPress(0x0D); // VK_RETURN
-                    Sleep(DefaultActionDelayMs);
+                        if (!EnsureBoundWindowReady(boundWindow, logs))
+                            return logs;
 
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
+                        _windowAutomation.SelectAll();
+                        Sleep(80);
+                        _windowAutomation.TypeText(currentPos);
+                        Sleep(120);
+                        _windowAutomation.KeyPress(0x0D); // VK_RETURN
+                        Sleep(DefaultActionDelayMs);
 
-                    // Datum eintragen
-                    ClickPoint(datumPoint, boundWindow);
-                    Sleep(DefaultActionDelayMs);
+                        if (!EnsureBoundWindowReady(boundWindow, logs))
+                            return logs;
 
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
+                        // Datum eintragen
+                        ClickPoint(datumPoint, boundWindow);
+                        Sleep(DefaultActionDelayMs);
 
-                    _windowAutomation.SelectAll();
-                    Sleep(80);
-                    _windowAutomation.TypeText(dateText);
-                    Sleep(DefaultActionDelayMs);
+                        if (!EnsureBoundWindowReady(boundWindow, logs))
+                            return logs;
 
-                    if (!EnsureBoundWindowReady(boundWindow, logs))
-                        return logs;
+                        _windowAutomation.SelectAll();
+                        Sleep(80);
+                        _windowAutomation.TypeText(currentDateText);
+                        Sleep(DefaultActionDelayMs);
 
-                    // Report starten
-                    ClickPoint(runReportPoint, boundWindow);
-                    logs.Add($"Report für POS {currentPos} gestartet");
+                        if (!EnsureBoundWindowReady(boundWindow, logs))
+                            return logs;
 
-                    if (!WaitForReportReady(boundWindow, logs, out IntPtr outputWindowHandle, ct))
-                        return logs;
+                        // Report starten
+                        ClickPoint(runReportPoint, boundWindow);
+                        logs.Add($"Report für POS {currentPos} / {currentDateText} gestartet");
 
-                    // Speichern
-                    var windowsBeforeSaveDialog = _windowAutomation.GetVisibleTopLevelWindowHandles();
-                    ClickPoint(outputSavePoint, boundWindow);
-                    logs.Add($"Diskette für POS {currentPos} geklickt");
+                        if (!WaitForReportReady(boundWindow, logs, out IntPtr outputWindowHandle, ct))
+                            return logs;
 
-                    if (!WaitForSaveDialog(windowsBeforeSaveDialog, logs, out _, ct: ct))
-                        return logs;
+                        // Speichern
+                        var windowsBeforeSaveDialog = _windowAutomation.GetVisibleTopLevelWindowHandles();
+                        ClickPoint(outputSavePoint, boundWindow);
+                        logs.Add($"Diskette für POS {currentPos} geklickt");
 
-                    string dateLabel = request.Date.ToString("dd.MM.yy", CultureInfo.InvariantCulture);
-                    string filePath = _pathResolver.ResolvePath("Stundenleistung", currentPos, request.SaveMode, dateLabel);
-                    string fileDir  = Path.GetDirectoryName(filePath) ?? string.Empty;
-                    string fileName = Path.GetFileName(filePath);
-                    logs.Add($"Versuche, in Datei zu speichern: {filePath}");
+                        if (!WaitForSaveDialog(windowsBeforeSaveDialog, logs, out _, ct: ct))
+                            return logs;
 
-                    if (!string.IsNullOrEmpty(fileDir))
-                        Directory.CreateDirectory(fileDir);
+                        string dateLabel = date.ToString("dd.MM.yy", CultureInfo.InvariantCulture);
+                        string filePath  = _pathResolver.ResolvePath("Stundenleistung", currentPos, request.SaveMode, dateLabel);
+                        string fileDir   = Path.GetDirectoryName(filePath) ?? string.Empty;
+                        string fileName  = Path.GetFileName(filePath);
+                        logs.Add($"Versuche, in Datei zu speichern: {filePath}");
 
-                    ClickPoint(saveDialogPathPoint, boundWindow);
-                    Sleep(DefaultActionDelayMs);
-                    _windowAutomation.SelectAll();
-                    Sleep(80);
-                    _windowAutomation.TypeText(fileDir);
-                    Sleep(DefaultActionDelayMs);
-                    _windowAutomation.KeyPress(0x0D); // Ordner navigieren
-                    Sleep(DefaultActionDelayMs);
+                        if (!string.IsNullOrEmpty(fileDir))
+                            Directory.CreateDirectory(fileDir);
 
-                    ClickPoint(saveDialogFilenamePoint, boundWindow);
-                    Sleep(DefaultActionDelayMs);
-                    _windowAutomation.SelectAll();
-                    Sleep(80);
-                    _windowAutomation.TypeText(fileName);
-                    Sleep(DefaultActionDelayMs);
+                        ClickPoint(saveDialogPathPoint, boundWindow);
+                        Sleep(DefaultActionDelayMs);
+                        _windowAutomation.SelectAll();
+                        Sleep(80);
+                        _windowAutomation.TypeText(fileDir);
+                        Sleep(DefaultActionDelayMs);
+                        _windowAutomation.KeyPress(0x0D);
+                        Sleep(DefaultActionDelayMs);
 
-                    ClickPoint(outputClosePoint, boundWindow);
-                    logs.Add($"Gespeichert für POS {currentPos}");
-                    Sleep(DefaultSaveDialogWaitMs);
+                        ClickPoint(saveDialogFilenamePoint, boundWindow);
+                        Sleep(DefaultActionDelayMs);
+                        _windowAutomation.SelectAll();
+                        Sleep(80);
+                        _windowAutomation.TypeText(fileName);
+                        Sleep(DefaultActionDelayMs);
 
-                    logs.Add("Warte auf Schließen des Report-Output-Fensters...");
-                    _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
-                    logs.Add("Report-Output-Fenster geschlossen.");
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    logs.Add($"Fehler bei POS {currentPos}: {ex.Message}");
+                        ClickPoint(outputClosePoint, boundWindow);
+                        logs.Add($"Gespeichert für POS {currentPos} / {currentDateText}");
+                        Sleep(DefaultSaveDialogWaitMs);
+
+                        logs.Add("Warte auf Schließen des Report-Output-Fensters...");
+                        _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
+                        logs.Add("Report-Output-Fenster geschlossen.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        logs.Add($"Fehler bei POS {currentPos} / {currentDateText}: {ex.Message}");
+                    }
                 }
             }
 

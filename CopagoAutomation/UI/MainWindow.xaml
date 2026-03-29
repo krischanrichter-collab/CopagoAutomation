@@ -459,14 +459,7 @@
 
 						<!-- Datum -->
 						<GroupBox Header="Datum Auswahl" Grid.Row="1" Margin="0,0,0,10">
-							<Grid Margin="10">
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="Auto"/>
-									<ColumnDefinition Width="Auto"/>
-								</Grid.ColumnDefinitions>
-								<TextBlock Text="Datum:" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-								<DatePicker x:Name="StundenDatum" Grid.Column="1" Width="160"/>
-							</Grid>
+							<ctrls:SingleDateRuleSelector x:Name="StundenDateSelector" Margin="10"/>
 						</GroupBox>
 
 						<!-- POS Auswahl -->

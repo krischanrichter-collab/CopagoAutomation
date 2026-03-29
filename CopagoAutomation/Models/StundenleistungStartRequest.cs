@@ -10,6 +10,6 @@ namespace CopagoAutomation.Models
         public SaveMode SaveMode { get; set; }
         public string? SammelordnerPath { get; set; }
         public List<string> SelectedPosValues { get; set; } = new();
-        public DateTime Date { get; set; }
+        public List<DateTime> Dates { get; set; } = new();
     }
 }
