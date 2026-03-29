@@ -71,6 +71,15 @@ namespace CopagoAutomation.Calibration
 				HotkeyDigit     = 8,
 				HotkeyText      = "Strg+Alt+I",
 				InstructionText = "Platziere die Maus mittig auf dem Speichern-Button im Save-Dialog und drücke dann Strg+Alt+I."
+			},
+			new CalibrationStepDefinition
+			{
+				Key             = "OutputExcelExport",
+				Title           = "Excel Export Button (nur Excel-Modus)",
+				HotkeyDigit     = 9,
+				HotkeyText      = "Strg+Alt+O",
+				InstructionText = "Nur für Excel-Modus: Platziere die Maus mittig auf dem 'Excel Export' Button im Ausgabe-Fenster und drücke dann Strg+Alt+O.",
+				IsRequired      = false
 			}
 		};
 
@@ -155,6 +164,15 @@ namespace CopagoAutomation.Calibration
 				HotkeyDigit     = 10,
 				HotkeyText      = "Strg+Alt+P",
 				InstructionText = "Platziere die Maus mittig auf dem Speichern-Button im Save-Dialog und drücke dann Strg+Alt+P."
+			},
+			new CalibrationStepDefinition
+			{
+				Key             = "OutputExcelExport",
+				Title           = "Excel Export Button (nur Excel-Modus)",
+				HotkeyDigit     = 7,
+				HotkeyText      = "Strg+Alt+U",
+				InstructionText = "Nur für Excel-Modus: Platziere die Maus mittig auf dem 'Excel Export' Button im Ausgabe-Fenster und drücke dann Strg+Alt+U. (Ersetzt Schritt 7 'Diskette' im Excel-Modus)",
+				IsRequired      = false
 			}
 		};
 
@@ -215,6 +233,15 @@ namespace CopagoAutomation.Calibration
 				HotkeyDigit     = 7,
 				HotkeyText      = "Strg+Alt+U",
 				InstructionText = "Platziere die Maus mittig auf dem Speichern-Button im Save-Dialog und drücke dann Strg+Alt+U."
+			},
+			new CalibrationStepDefinition
+			{
+				Key             = "OutputExcelExport",
+				Title           = "Excel Export Button (nur Excel-Modus)",
+				HotkeyDigit     = 8,
+				HotkeyText      = "Strg+Alt+I",
+				InstructionText = "Nur für Excel-Modus: Platziere die Maus mittig auf dem 'Excel Export' Button im Ausgabe-Fenster und drücke dann Strg+Alt+I.",
+				IsRequired      = false
 			}
 		};
 
@@ -235,6 +262,16 @@ namespace CopagoAutomation.Calibration
 			var keys = new List<string>(steps.Count);
 			foreach (var step in steps)
 				keys.Add(step.Key);
+			return keys;
+		}
+
+		public static IReadOnlyList<string> GetRequiredKeysForProfile(string profileName)
+		{
+			var steps = GetStepsForProfile(profileName);
+			var keys = new List<string>(steps.Count);
+			foreach (var step in steps)
+				if (step.IsRequired)
+					keys.Add(step.Key);
 			return keys;
 		}
 	}

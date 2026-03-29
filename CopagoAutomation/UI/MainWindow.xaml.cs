@@ -62,6 +62,9 @@ namespace CopagoAutomation
             XModeLaptop.Checked += XMode_Checked;
             XModeDocking.Checked += XMode_Checked;
 
+            StundenModeLaptop.Checked += StundenMode_Checked;
+            StundenModeDocking.Checked += StundenMode_Checked;
+
             AbcSammelordner.LostFocus += AbcStorageFields_LostFocus;
             XSammelordner.LostFocus += XStorageFields_LostFocus;
             StundenSammelordner.LostFocus += StundenStorageFields_LostFocus;
@@ -69,9 +72,6 @@ namespace CopagoAutomation
             AbcPosList.SelectionChanged += AbcPosList_SelectionChanged;
             XPosList.SelectionChanged += XPosList_SelectionChanged;
             StundenPosList.SelectionChanged += StundenPosList_SelectionChanged;
-
-            StundenModeLaptop.Checked += StundenMode_Checked;
-            StundenModeDocking.Checked += StundenMode_Checked;
 
             LoadPosEntries();
             LoadSettings();
@@ -139,6 +139,7 @@ namespace CopagoAutomation
             UpdateXSaveModeUi();
             ApplyStundenStorageSettingsToUi();
             RestorePosSelections();
+            ApplyOutputFormatToUi();
         }
 
         private void ApplyXStorageSettingsToUi()
@@ -193,9 +194,11 @@ namespace CopagoAutomation
                 await _calibrationStorage.SaveAsync(_calibrationData);
         }
 
-        private static string GetCalibrationModeName(MachineMode mode)
+        private static string GetCalibrationModeName(MachineMode mode, OutputFormat format)
         {
-            return mode == MachineMode.Laptop ? "laptop" : "dock";
+            string modeBase     = mode   == MachineMode.Laptop  ? "laptop" : "dock";
+            string formatSuffix = format == OutputFormat.Excel  ? "_excel" : "_pdf";
+            return modeBase + formatSuffix;
         }
 
 
@@ -388,6 +391,7 @@ namespace CopagoAutomation
             var request = new AbcStartRequest
             {
                 Mode              = _settings.AbcMode,
+                OutputFormat      = _settings.AbcOutputFormat,
                 SaveMode          = _settings.AbcSaveMode,
                 BaseFolder        = _settings.AbcBaseFolder ?? string.Empty,
                 SammelordnerPath  = _settings.AbcSammelordnerPath,
@@ -436,9 +440,10 @@ namespace CopagoAutomation
 
             var request = new XStartRequest
             {
-                Mode = _settings.XMode,
-                SaveMode = _settings.XSaveMode,
-                BaseFolder = _settings.XBaseFolder ?? string.Empty,
+                Mode         = _settings.XMode,
+                OutputFormat = _settings.XOutputFormat,
+                SaveMode     = _settings.XSaveMode,
+                BaseFolder   = _settings.XBaseFolder ?? string.Empty,
                 SammelordnerPath = _settings.XSammelordnerPath,
                 SelectedPosValues = XPosList.SelectedItems.Cast<string>().ToList(),
                 Year = year > 0 ? year : DateTime.Today.Year,
@@ -546,8 +551,15 @@ namespace CopagoAutomation
                 CalibrationProfiles.Stundenleistung => _settings?.StundenleistungMode ?? MachineMode.Laptop,
                 _                                   => _settings?.AbcMode ?? MachineMode.Laptop
             };
-            string modeName = GetCalibrationModeName(machineMode);
-            _mainViewModel.StartCalibration(modeName, profileName);
+            OutputFormat outputFormat = profileName switch
+            {
+                CalibrationProfiles.XListe          => _settings?.XOutputFormat ?? OutputFormat.Pdf,
+                CalibrationProfiles.Stundenleistung => _settings?.StundenleistungOutputFormat ?? OutputFormat.Pdf,
+                _                                   => _settings?.AbcOutputFormat ?? OutputFormat.Pdf
+            };
+            string modeName = GetCalibrationModeName(machineMode, outputFormat);
+            bool includeOptional = outputFormat == OutputFormat.Excel;
+            _mainViewModel.StartCalibration(modeName, profileName, includeOptional);
 
             WindowState = WindowState.Minimized;
 
@@ -644,6 +656,7 @@ namespace CopagoAutomation
             var request = new StundenleistungStartRequest
             {
                 Mode             = _settings.StundenleistungMode,
+                OutputFormat     = _settings.StundenleistungOutputFormat,
                 SaveMode         = _settings.StundenleistungSaveMode,
                 BaseFolder       = _settings.StundenleistungBaseFolder ?? string.Empty,
                 SammelordnerPath = _settings.StundenleistungSammelordnerPath,
@@ -683,6 +696,41 @@ namespace CopagoAutomation
         private void StundenStop_Click(object sender, RoutedEventArgs e)
         {
             _stundenCts?.Cancel();
+        }
+
+        // ===================== OUTPUT FORMAT =====================
+
+        private void ApplyOutputFormatToUi()
+        {
+            if (_settings == null) return;
+
+            AbcFormatPdf.IsChecked      = _settings.AbcOutputFormat      == OutputFormat.Pdf;
+            AbcFormatExcel.IsChecked    = _settings.AbcOutputFormat      == OutputFormat.Excel;
+            XFormatPdf.IsChecked        = _settings.XOutputFormat        == OutputFormat.Pdf;
+            XFormatExcel.IsChecked      = _settings.XOutputFormat        == OutputFormat.Excel;
+            StundenFormatPdf.IsChecked  = _settings.StundenleistungOutputFormat == OutputFormat.Pdf;
+            StundenFormatExcel.IsChecked= _settings.StundenleistungOutputFormat == OutputFormat.Excel;
+        }
+
+        private async void AbcFormatChanged(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.AbcOutputFormat = AbcFormatExcel.IsChecked == true ? OutputFormat.Excel : OutputFormat.Pdf;
+            await SaveSettingsAsync();
+        }
+
+        private async void XFormatChanged(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.XOutputFormat = XFormatExcel.IsChecked == true ? OutputFormat.Excel : OutputFormat.Pdf;
+            await SaveSettingsAsync();
+        }
+
+        private async void StundenFormatChanged(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.StundenleistungOutputFormat = StundenFormatExcel.IsChecked == true ? OutputFormat.Excel : OutputFormat.Pdf;
+            await SaveSettingsAsync();
         }
     }
 

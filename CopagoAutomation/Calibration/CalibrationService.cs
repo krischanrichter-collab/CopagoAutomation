@@ -143,7 +143,7 @@ var point = profile.Points.FirstOrDefault(p =>
 			ValidateModeName(modeName);
 			ValidateProfileName(profileName);
 
-			var requiredKeys = CalibrationDefinitions.GetKeysForProfile(profileName);
+			var requiredKeys = CalibrationDefinitions.GetRequiredKeysForProfile(profileName);
 			if (requiredKeys.Count == 0)
 				return false;
 

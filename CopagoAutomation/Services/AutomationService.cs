@@ -37,7 +37,7 @@ namespace CopagoAutomation.Services
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            string modeName = ResolveModeName(request.Mode);
+            string modeName = ResolveModeName(request.Mode, request.OutputFormat);
 
             if (!_calibrationService.IsProfileComplete(modeName, AbcProfileName))
             {
@@ -53,7 +53,7 @@ namespace CopagoAutomation.Services
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            string modeName = ResolveModeName(request.Mode);
+            string modeName = ResolveModeName(request.Mode, request.OutputFormat);
 
             if (!_calibrationService.IsProfileComplete(modeName, XProfileName))
             {
@@ -69,7 +69,7 @@ namespace CopagoAutomation.Services
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            string modeName = ResolveModeName(request.Mode);
+            string modeName = ResolveModeName(request.Mode, request.OutputFormat);
 
             if (!_calibrationService.IsProfileComplete(modeName, StundenleistungProfileName))
             {
@@ -123,9 +123,11 @@ namespace CopagoAutomation.Services
 			return point;
 		}
 
-        private static string ResolveModeName(MachineMode mode)
+        private static string ResolveModeName(MachineMode mode, OutputFormat format)
 		{
-            return mode == MachineMode.Laptop ? "laptop" : "dock";
+            string modeBase   = mode   == MachineMode.Laptop  ? "laptop" : "dock";
+            string formatSuffix = format == OutputFormat.Excel ? "_excel" : "_pdf";
+            return modeBase + formatSuffix;
 		}
 	}
 }

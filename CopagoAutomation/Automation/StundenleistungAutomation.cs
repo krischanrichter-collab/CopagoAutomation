@@ -93,6 +93,15 @@ namespace CopagoAutomation.Automation
             var outputClosePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputClose", boundWindow);
             if (outputClosePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'OutputClose' fehlt."); return logs; }
 
+            var outputExcelExportPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputExcelExport", boundWindow);
+            bool isExcel = request.OutputFormat == OutputFormat.Excel;
+            if (isExcel && outputExcelExportPoint == null)
+            {
+                logs.Add("Fehler: Kalibrierpunkt 'OutputExcelExport' fehlt (Excel-Modus).");
+                return logs;
+            }
+            string extension = isExcel ? ".xlsx" : ".pdf";
+
             logs.Add("Stundenleistung Automation gestartet");
             logs.Add($"Gebundenes Fenster: {boundWindow.Title}");
             logs.Add($"Datumseinträge: {request.Dates.Count}");
@@ -159,15 +168,16 @@ namespace CopagoAutomation.Automation
                             return logs;
 
                         // Speichern
-                        var windowsBeforeSaveDialog = _windowAutomation.GetVisibleTopLevelWindowHandles();
-                        ClickPoint(outputSavePoint, boundWindow);
-                        logs.Add($"Diskette für POS {currentPos} geklickt");
+                        _windowAutomation.TryActivateWindow(outputWindowHandle);
+                        Sleep(DefaultActionDelayMs);
 
-                        if (!WaitForSaveDialog(windowsBeforeSaveDialog, logs, out _, ct: ct))
-                            return logs;
+                        var windowsBeforeSaveDialog = _windowAutomation.GetVisibleTopLevelWindowHandles();
+                        var saveClickPoint = isExcel ? outputExcelExportPoint! : outputSavePoint;
+                        ClickPoint(saveClickPoint, boundWindow);
+                        logs.Add(isExcel ? $"Excel Export für POS {currentPos} geklickt" : $"Diskette für POS {currentPos} geklickt");
 
                         string dateLabel = date.ToString("dd.MM.yy", CultureInfo.InvariantCulture);
-                        string filePath  = _pathResolver.ResolvePath("Stundenleistung", currentPos, request.SaveMode, dateLabel);
+                        string filePath  = _pathResolver.ResolvePath("Stundenleistung", currentPos, request.SaveMode, dateLabel, extension);
                         string fileDir   = Path.GetDirectoryName(filePath) ?? string.Empty;
                         string fileName  = Path.GetFileName(filePath);
                         logs.Add($"Versuche, in Datei zu speichern: {filePath}");
@@ -175,25 +185,51 @@ namespace CopagoAutomation.Automation
                         if (!string.IsNullOrEmpty(fileDir))
                             Directory.CreateDirectory(fileDir);
 
-                        ClickPoint(saveDialogPathPoint, boundWindow);
-                        Sleep(DefaultActionDelayMs);
-                        _windowAutomation.SelectAll();
-                        Sleep(80);
-                        _windowAutomation.TypeText(fileDir);
-                        Sleep(DefaultActionDelayMs);
-                        _windowAutomation.KeyPress(0x0D);
-                        Sleep(DefaultActionDelayMs);
+                        if (!WaitForSaveDialog(windowsBeforeSaveDialog, logs, out IntPtr saveDialogHandle, ct: ct))
+                            return logs;
 
-                        ClickPoint(saveDialogFilenamePoint, boundWindow);
-                        Sleep(DefaultActionDelayMs);
-                        _windowAutomation.SelectAll();
-                        Sleep(80);
-                        _windowAutomation.TypeText(fileName);
-                        Sleep(DefaultActionDelayMs);
+                        if (isExcel)
+                        {
+                            if (!_windowAutomation.SetSaveDialogPath(saveDialogHandle, filePath, out string pathMsg))
+                            {
+                                logs.Add($"Fehler beim Setzen des Speicherpfads: {pathMsg}");
+                                return logs;
+                            }
+                            logs.Add(pathMsg);
+                            Sleep(DefaultActionDelayMs);
+                            _windowAutomation.KeyPress(0x0D); // Enter bestätigt den Speichern-Dialog
+                        }
+                        else
+                        {
+                            ClickPoint(saveDialogPathPoint, boundWindow);
+                            Sleep(DefaultActionDelayMs);
+                            _windowAutomation.SelectAll();
+                            Sleep(80);
+                            _windowAutomation.TypeText(fileDir);
+                            Sleep(DefaultActionDelayMs);
+                            _windowAutomation.KeyPress(0x0D);
+                            Sleep(DefaultActionDelayMs);
 
-                        ClickPoint(outputClosePoint, boundWindow);
+                            ClickPoint(saveDialogFilenamePoint, boundWindow);
+                            Sleep(DefaultActionDelayMs);
+                            _windowAutomation.SelectAll();
+                            Sleep(80);
+                            _windowAutomation.TypeText(fileName);
+                            Sleep(DefaultActionDelayMs);
+
+                            ClickPoint(outputClosePoint, boundWindow);
+                        }
+
                         logs.Add($"Gespeichert für POS {currentPos} / {currentDateText}");
                         Sleep(DefaultSaveDialogWaitMs);
+
+                        if (isExcel)
+                        {
+                            logs.Add("Warte auf Excel-Bestätigungsdialog...");
+                            var windowsBeforeConfirm = _windowAutomation.GetVisibleTopLevelWindowHandles();
+                            _windowAutomation.WaitForNewWindowAndPressEnter(windowsBeforeConfirm, ct: ct);
+                            logs.Add("Excel-Bestätigungsdialog bestätigt.");
+                        }
 
                         logs.Add("Warte auf Schließen des Report-Output-Fensters...");
                         _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);

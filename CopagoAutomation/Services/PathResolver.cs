@@ -13,7 +13,7 @@ namespace CopagoAutomation.Services
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
-        public string ResolvePath(string reportName, string posId, SaveMode saveMode, string dateLabel = "")
+        public string ResolvePath(string reportName, string posId, SaveMode saveMode, string dateLabel = "", string extension = ".pdf")
         {
             string? basePath;
             string reportLabel;
@@ -41,7 +41,7 @@ namespace CopagoAutomation.Services
             }
 
             string fileSuffix = string.IsNullOrWhiteSpace(dateLabel) ? "" : $"_{dateLabel}";
-            string baseFileName = $"{reportName}_{posId}{fileSuffix}.pdf";
+            string baseFileName = $"{reportName}_{posId}{fileSuffix}{extension}";
 
             if (saveMode == SaveMode.SemcoUpload)
             {

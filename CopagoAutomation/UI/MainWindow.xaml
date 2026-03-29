@@ -55,6 +55,7 @@
 									<RowDefinition Height="Auto"/>
 									<RowDefinition Height="Auto"/>
 									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
 								</Grid.RowDefinitions>
 
 								<TextBlock Text="Modus:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
@@ -63,16 +64,24 @@
 									<RadioButton x:Name="AbcModeDocking" Content="Docking"/>
 								</StackPanel>
 
-								<TextBlock Text="Aktiv:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<TextBlock Text="Format:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="10,8,0,0">
+									<RadioButton x:Name="AbcFormatPdf" Content="PDF" IsChecked="True" Margin="0,0,16,0"
+                                                 Checked="AbcFormatChanged"/>
+									<RadioButton x:Name="AbcFormatExcel" Content="Excel"
+                                                 Checked="AbcFormatChanged"/>
+								</StackPanel>
+
+								<TextBlock Text="Aktiv:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
 								<TextBlock x:Name="AbcActiveIniText"
                                            Text="Laptop | INI: (Pfad...)"
-                                           Grid.Row="1" Grid.Column="1"
+                                           Grid.Row="2" Grid.Column="1"
                                            Margin="10,8,0,0"/>
 
-								<TextBlock Text="Status:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<TextBlock Text="Status:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
 								<TextBlock x:Name="AbcStatusText"
                                            Text="bereit"
-                                           Grid.Row="2" Grid.Column="1"
+                                           Grid.Row="3" Grid.Column="1"
                                            Margin="10,8,0,0"/>
 							</Grid>
 						</GroupBox>
@@ -239,6 +248,7 @@
 									<RowDefinition Height="Auto"/>
 									<RowDefinition Height="Auto"/>
 									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
 								</Grid.RowDefinitions>
 
 								<TextBlock Text="Modus:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
@@ -247,16 +257,24 @@
 									<RadioButton x:Name="XModeDocking" Content="Docking"/>
 								</StackPanel>
 
-								<TextBlock Text="Aktiv:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<TextBlock Text="Format:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="10,8,0,0">
+									<RadioButton x:Name="XFormatPdf" Content="PDF" IsChecked="True" Margin="0,0,16,0"
+                                                 Checked="XFormatChanged"/>
+									<RadioButton x:Name="XFormatExcel" Content="Excel"
+                                                 Checked="XFormatChanged"/>
+								</StackPanel>
+
+								<TextBlock Text="Aktiv:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
 								<TextBlock x:Name="XActiveIniText"
                                            Text="Laptop | INI: (Pfad...)"
-                                           Grid.Row="1" Grid.Column="1"
+                                           Grid.Row="2" Grid.Column="1"
                                            Margin="10,8,0,0"/>
 
-								<TextBlock Text="Status:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<TextBlock Text="Status:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
 								<TextBlock x:Name="XStatusText"
                                            Text="bereit"
-                                           Grid.Row="2" Grid.Column="1"
+                                           Grid.Row="3" Grid.Column="1"
                                            Margin="10,8,0,0"/>
 							</Grid>
 						</GroupBox>
@@ -435,6 +453,7 @@
 									<RowDefinition Height="Auto"/>
 									<RowDefinition Height="Auto"/>
 									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
 								</Grid.RowDefinitions>
 
 								<TextBlock Text="Modus:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
@@ -443,16 +462,24 @@
 									<RadioButton x:Name="StundenModeDocking" Content="Docking"/>
 								</StackPanel>
 
-								<TextBlock Text="Aktiv:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<TextBlock Text="Format:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="10,8,0,0">
+									<RadioButton x:Name="StundenFormatPdf" Content="PDF" IsChecked="True" Margin="0,0,16,0"
+                                                 Checked="StundenFormatChanged"/>
+									<RadioButton x:Name="StundenFormatExcel" Content="Excel"
+                                                 Checked="StundenFormatChanged"/>
+								</StackPanel>
+
+								<TextBlock Text="Aktiv:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
 								<TextBlock x:Name="StundenActiveIniText"
                                            Text="Laptop | INI: (Pfad...)"
-                                           Grid.Row="1" Grid.Column="1"
+                                           Grid.Row="2" Grid.Column="1"
                                            Margin="10,8,0,0"/>
 
-								<TextBlock Text="Status:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<TextBlock Text="Status:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
 								<TextBlock x:Name="StundenStatusText"
                                            Text="bereit"
-                                           Grid.Row="2" Grid.Column="1"
+                                           Grid.Row="3" Grid.Column="1"
                                            Margin="10,8,0,0"/>
 							</Grid>
 						</GroupBox>

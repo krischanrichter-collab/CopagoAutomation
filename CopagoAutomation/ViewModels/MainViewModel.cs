@@ -43,7 +43,7 @@ namespace CopagoAutomation.ViewModels
 
 		public int LastCapturedY => _lastCapturedY;
 
-		public void StartCalibration(string modeName, string profileName)
+		public void StartCalibration(string modeName, string profileName, bool includeOptionalSteps = true)
 		{
 			if (string.IsNullOrWhiteSpace(modeName))
 				throw new ArgumentException("modeName darf nicht leer sein.", nameof(modeName));
@@ -52,7 +52,7 @@ namespace CopagoAutomation.ViewModels
 				throw new ArgumentException("profileName darf nicht leer sein.", nameof(profileName));
 
 			_currentCalibrationModeName = modeName;
-			_calibrationRunner = new CalibrationRunner(profileName);
+			_calibrationRunner = new CalibrationRunner(profileName, includeOptionalSteps);
 
 			ResetLastCapture();
 			NotifyCalibrationStateChanged();

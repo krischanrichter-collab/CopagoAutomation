@@ -7,7 +7,13 @@
 		public string HotkeyText { get; set; } = string.Empty;
 		public string InstructionText { get; set; } = string.Empty;
 
-		/// <summary>The digit (1–9) the user must press together with Ctrl+Alt to capture this point.</summary>
+		/// <summary>1-based step index (1–10) mapping to Ctrl+Alt+Q … Ctrl+Alt+P</summary>
 		public int HotkeyDigit { get; set; }
+
+		/// <summary>
+		/// Pflichtschritt: muss kalibriert sein damit IsProfileComplete true zurückgibt.
+		/// Optionale Schritte (z.B. OutputExcelExport) werden nur geprüft wenn der jeweilige Modus aktiv ist.
+		/// </summary>
+		public bool IsRequired { get; set; } = true;
 	}
 }

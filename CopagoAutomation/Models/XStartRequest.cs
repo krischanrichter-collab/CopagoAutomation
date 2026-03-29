@@ -18,5 +18,6 @@ namespace CopagoAutomation.Models
 
         public SaveMode SaveMode { get; set; }
         public string? SammelordnerPath { get; set; }
+        public OutputFormat OutputFormat { get; set; } = OutputFormat.Pdf;
     }
 }

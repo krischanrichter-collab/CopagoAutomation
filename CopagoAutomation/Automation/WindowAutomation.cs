@@ -681,6 +681,45 @@ namespace CopagoAutomation.Automation
             return true;
         }
 
+        /// <summary>
+        /// Wartet bis ein neues Fenster erscheint (z.B. Excel-Info-Dialog), aktiviert es und drückt Enter.
+        /// Wartet danach bis das Fenster wieder verschwunden ist.
+        /// </summary>
+        public bool WaitForNewWindowAndPressEnter(HashSet<IntPtr> windowsBefore, int timeoutMs = 15_000, CancellationToken ct = default)
+        {
+            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            IntPtr infoHandle = IntPtr.Zero;
+
+            while (DateTime.UtcNow < deadline)
+            {
+                ct.WaitHandle.WaitOne(200);
+                if (ct.IsCancellationRequested) return false;
+
+                var windowsNow = GetVisibleTopLevelWindowHandles();
+                infoHandle = IntPtr.Zero;
+                foreach (var h in windowsNow)
+                    if (!windowsBefore.Contains(h)) { infoHandle = h; break; }
+
+                if (infoHandle != IntPtr.Zero) break;
+            }
+
+            if (infoHandle == IntPtr.Zero) return false;
+
+            TryActivateWindow(infoHandle);
+            Thread.Sleep(200);
+            KeyPress(0x0D); // VK_RETURN
+
+            // Warten bis Info-Fenster geschlossen
+            var closeDeadline = DateTime.UtcNow.AddMilliseconds(5000);
+            while (DateTime.UtcNow < closeDeadline)
+            {
+                if (!IsWindow(infoHandle)) return true;
+                ct.WaitHandle.WaitOne(100);
+                if (ct.IsCancellationRequested) return false;
+            }
+            return !IsWindow(infoHandle);
+        }
+
         public bool CloseWindowAndWait(IntPtr hWnd, int timeoutMs = 5000, CancellationToken ct = default)
         {
             if (!IsValidHandle(hWnd)) return true;

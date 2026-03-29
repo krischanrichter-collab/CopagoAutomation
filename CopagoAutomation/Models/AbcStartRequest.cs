@@ -11,6 +11,7 @@ namespace CopagoAutomation.Models
 		public bool UseSammelordner { get; set; }
 		public int SelectedPosCount { get; set; }
 
+        public OutputFormat OutputFormat { get; set; } = OutputFormat.Pdf;
         public DateTime DateFrom { get; set; }
         public DateTime DateTo { get; set; }
         /// <summary>

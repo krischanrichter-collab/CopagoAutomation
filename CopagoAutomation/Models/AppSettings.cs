@@ -16,6 +16,12 @@ namespace CopagoAutomation.Models
 		Alternativ = 1
 	}
 
+	public enum OutputFormat
+	{
+		Pdf   = 0,
+		Excel = 1
+	}
+
 	public sealed class AppSettings
 	{
 		public int Version { get; set; } = 1;
@@ -23,6 +29,11 @@ namespace CopagoAutomation.Models
 		// Maschinenmodus pro Report
 		public MachineMode AbcMode { get; set; } = MachineMode.Laptop;
 		public MachineMode XMode { get; set; } = MachineMode.Laptop;
+
+		// Ausgabeformat pro Report
+		public OutputFormat AbcOutputFormat { get; set; } = OutputFormat.Pdf;
+		public OutputFormat XOutputFormat { get; set; } = OutputFormat.Pdf;
+		public OutputFormat StundenleistungOutputFormat { get; set; } = OutputFormat.Pdf;
 
 		// Letzter POS (oder null wenn keiner)
 		public string? LastPosId { get; set; }

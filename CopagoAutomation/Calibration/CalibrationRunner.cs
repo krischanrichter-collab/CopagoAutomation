@@ -28,14 +28,20 @@ namespace CopagoAutomation.Calibration
 
 		public IReadOnlyList<CalibrationStepDefinition> Steps => _steps;
 
-		public CalibrationRunner(string profileName)
+		public CalibrationRunner(string profileName, bool includeOptionalSteps = true)
 		{
 			if (string.IsNullOrWhiteSpace(profileName))
 				throw new ArgumentException("Profile name must not be empty.", nameof(profileName));
 
 			ProfileName = profileName;
-			_steps = new List<CalibrationStepDefinition>(
-				CalibrationDefinitions.GetStepsForProfile(profileName));
+
+			var all = CalibrationDefinitions.GetStepsForProfile(profileName);
+			_steps = new List<CalibrationStepDefinition>();
+			foreach (var step in all)
+			{
+				if (step.IsRequired || includeOptionalSteps)
+					_steps.Add(step);
+			}
 
 			CurrentIndex = 0;
 		}
