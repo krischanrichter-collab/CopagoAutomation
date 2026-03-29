@@ -33,6 +33,15 @@ namespace CopagoAutomation.Models
 		// Gespeicherte POS-Auswahl pro Report
 		public List<string> SelectedAbcPosValues { get; set; } = new();
 		public List<string> SelectedXPosValues { get; set; } = new();
+		public List<string> SelectedStundenleistungPosValues { get; set; } = new();
+
+		// =========================================
+		// Stundenleistung
+		// =========================================
+		public MachineMode StundenleistungMode { get; set; } = MachineMode.Laptop;
+		public SaveMode StundenleistungSaveMode { get; set; } = SaveMode.SemcoUpload;
+		public string? StundenleistungBaseFolder { get; set; }
+		public string? StundenleistungSammelordnerPath { get; set; }
 
 		// =========================================
 		// 🔥 NEUE SPEICHER-ARCHITEKTUR

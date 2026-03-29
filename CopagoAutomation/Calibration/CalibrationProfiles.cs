@@ -4,5 +4,6 @@
 	{
 		public const string AbcAnalyse = "ABC Analyse";
 		public const string XListe = "X-Liste";
+		public const string Stundenleistung = "Stundenleistung";
 	}
 }

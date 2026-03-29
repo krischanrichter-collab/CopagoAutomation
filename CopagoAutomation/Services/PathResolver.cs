@@ -16,41 +16,38 @@ namespace CopagoAutomation.Services
         public string ResolvePath(string reportName, string posId, SaveMode saveMode)
         {
             string? basePath;
+            string reportLabel;
 
-            // Wir müssen unterscheiden, ob es ein ABC- oder X-Liste-Report ist, 
-            // um die richtigen Einstellungen zu laden.
-            bool isAbc = reportName.Contains("ABC", StringComparison.OrdinalIgnoreCase);
+            if (reportName.Contains("ABC", StringComparison.OrdinalIgnoreCase))
+            {
+                basePath    = saveMode == SaveMode.SemcoUpload ? _settings.AbcBaseFolder : _settings.AbcSammelordnerPath;
+                reportLabel = "ABC";
+            }
+            else if (reportName.Contains("Stundenleistung", StringComparison.OrdinalIgnoreCase))
+            {
+                basePath    = saveMode == SaveMode.SemcoUpload ? _settings.StundenleistungBaseFolder : _settings.StundenleistungSammelordnerPath;
+                reportLabel = "Stundenleistung";
+            }
+            else
+            {
+                basePath    = saveMode == SaveMode.SemcoUpload ? _settings.XBaseFolder : _settings.XSammelordnerPath;
+                reportLabel = "X-Liste";
+            }
+
+            if (string.IsNullOrWhiteSpace(basePath))
+            {
+                string modeLabel = saveMode == SaveMode.SemcoUpload ? "Semco-Modus (BaseFolder)" : "Alternativ-Modus (Sammelordner)";
+                throw new InvalidOperationException($"Pfad für {reportLabel} im {modeLabel} ist nicht konfiguriert.");
+            }
 
             if (saveMode == SaveMode.SemcoUpload)
             {
-                // Im Semco-Modus wird der BaseFolder aus den Einstellungen verwendet
-                // und der Pfad ist fest definiert (BaseFolder\POS\ReportName.pdf)
-                basePath = isAbc ? _settings.AbcBaseFolder : _settings.XBaseFolder;
-                
-                if (string.IsNullOrWhiteSpace(basePath))
-                {
-                    throw new InvalidOperationException($"BaseFolder für {(isAbc ? "ABC" : "X-Liste")} ist im Semco-Modus nicht konfiguriert.");
-                }
-
-                // Für Semco-Upload wird der Pfad automatisch generiert: BaseFolder\POS-ID\ReportName_POS-ID.pdf
-                // Beispiel: C:\CopagoReports\POS123\ABC_Analyse_POS123.pdf
                 string directory = Path.Combine(basePath, posId);
-                string fileName = $"{reportName}_{posId}.pdf";
+                string fileName  = $"{reportName}_{posId}.pdf";
                 return Path.Combine(directory, fileName);
             }
             else if (saveMode == SaveMode.Alternativ)
             {
-                // Im Alternativ-Modus wird der SammelordnerPath aus den Einstellungen verwendet
-                // und der Pfad ist fest definiert (SammelordnerPath\ReportName_POS-ID.pdf)
-                basePath = isAbc ? _settings.AbcSammelordnerPath : _settings.XSammelordnerPath;
-
-                if (string.IsNullOrWhiteSpace(basePath))
-                {
-                    throw new InvalidOperationException($"Alternativer Ordner für {(isAbc ? "ABC" : "X-Liste")} ist im Alternativ-Modus nicht konfiguriert.");
-                }
-
-                // Für Alternativ-Modus wird der Pfad automatisch generiert: SammelordnerPath\ReportName_POS-ID.pdf
-                // Beispiel: C:\AlternativReports\ABC_Analyse_POS123.pdf
                 string fileName = $"{reportName}_{posId}.pdf";
                 return Path.Combine(basePath, fileName);
             }

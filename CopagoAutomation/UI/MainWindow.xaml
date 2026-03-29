@@ -408,6 +408,179 @@
 				</ScrollViewer>
 			</TabItem>
 
+			<!-- ========================= -->
+			<!-- TAB: STUNDENLEISTUNG       -->
+			<!-- ========================= -->
+			<TabItem Header="Stundenleistung">
+				<ScrollViewer VerticalScrollBarVisibility="Visible"
+                              HorizontalScrollBarVisibility="Disabled">
+
+					<Grid Margin="10">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="260"/>
+						</Grid.RowDefinitions>
+
+						<!-- Systemstatus / Modus -->
+						<GroupBox Header="Systemstatus" Grid.Row="0" Margin="0,0,0,10">
+							<Grid Margin="10">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
+								</Grid.RowDefinitions>
+
+								<TextBlock Text="Modus:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+								<StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0">
+									<RadioButton x:Name="StundenModeLaptop" Content="Laptop" IsChecked="True" Margin="0,0,16,0"/>
+									<RadioButton x:Name="StundenModeDocking" Content="Docking"/>
+								</StackPanel>
+
+								<TextBlock Text="Aktiv:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<TextBlock x:Name="StundenActiveIniText"
+                                           Text="Laptop | INI: (Pfad...)"
+                                           Grid.Row="1" Grid.Column="1"
+                                           Margin="10,8,0,0"/>
+
+								<TextBlock Text="Status:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,8,0,0"/>
+								<TextBlock x:Name="StundenStatusText"
+                                           Text="bereit"
+                                           Grid.Row="2" Grid.Column="1"
+                                           Margin="10,8,0,0"/>
+							</Grid>
+						</GroupBox>
+
+						<!-- Datum -->
+						<GroupBox Header="Datum Auswahl" Grid.Row="1" Margin="0,0,0,10">
+							<Grid Margin="10">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<TextBlock Text="Datum:" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+								<DatePicker x:Name="StundenDatum" Grid.Column="1" Width="160"/>
+							</Grid>
+						</GroupBox>
+
+						<!-- POS Auswahl -->
+						<GroupBox Header="POS auswählen (Mehrfachauswahl mit Strg/Shift)" Grid.Row="2" Margin="0,0,0,10">
+							<Grid Margin="10">
+								<Grid.RowDefinitions>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
+								</Grid.RowDefinitions>
+
+								<ListBox x:Name="StundenPosList"
+                                         Grid.Row="0"
+                                         SelectionMode="Extended"
+                                         Height="220"
+                                         MinHeight="120"
+                                         MaxHeight="520"/>
+
+								<GridSplitter Grid.Row="1"
+                                              Height="8"
+                                              HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Center"
+                                              ResizeDirection="Rows"
+                                              ResizeBehavior="PreviousAndNext"
+                                              Background="Transparent" />
+
+								<Button Grid.Row="2"
+                                        Content="POS zurücksetzen"
+                                        Width="160"
+                                        Margin="0,10,0,0"
+                                        HorizontalAlignment="Left"
+                                        Click="StundenResetPos_Click"/>
+							</Grid>
+						</GroupBox>
+
+						<!-- Speicher -->
+						<GroupBox Header="Speicher" Grid.Row="3" Margin="0,0,0,10">
+							<Grid Margin="10">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
+								</Grid.RowDefinitions>
+
+								<StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal">
+									<RadioButton x:Name="StundenSaveModeSemco"
+                     Content="Semco Upload (Standard - automatische Pfade)"
+                     IsChecked="True"
+                     Margin="0,0,20,0"
+                     Checked="StundenSaveModeChanged"/>
+									<RadioButton x:Name="StundenSaveModeAlt"
+                     Content="Alternativer Ordner"
+                     Checked="StundenSaveModeChanged"/>
+								</StackPanel>
+
+								<StackPanel Grid.Row="1" Grid.Column="0" Orientation="Vertical" Margin="0,10,0,0">
+									<TextBlock Text="Alternativer Ordner:"/>
+									<TextBox x:Name="StundenSammelordner" Margin="0,6,0,0"/>
+								</StackPanel>
+
+								<Button Grid.Row="1" Grid.Column="1"
+            Content="Browse..."
+            Width="110"
+            Height="30"
+            Margin="12,30,0,0"
+            Click="StundenBrowseSammelordner_Click"/>
+							</Grid>
+						</GroupBox>
+
+						<!-- Start/Stop + Log -->
+						<Grid Grid.Row="4">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+
+							<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+								<Button Content="Kalibrieren"
+                                        Width="140"
+                                        Height="34"
+                                        Margin="0,0,12,0"
+                                        Click="StundenCalibration_Click"/>
+								<Button x:Name="StundenStartButton"
+                                        Content="Start"
+                                        Width="140"
+                                        Height="34"
+                                        Margin="0,0,12,0"
+                                        Click="StundenStart_Click"/>
+								<Button x:Name="StundenStopButton"
+                                        Content="Stop"
+                                        Width="140"
+                                        Height="34"
+                                        IsEnabled="False"
+                                        Click="StundenStop_Click"/>
+							</StackPanel>
+
+							<GroupBox Header="Log" Grid.Row="1">
+								<TextBox x:Name="StundenLogBox"
+                                         Margin="8"
+                                         IsReadOnly="True"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         FontFamily="Consolas"/>
+							</GroupBox>
+						</Grid>
+
+					</Grid>
+				</ScrollViewer>
+			</TabItem>
+
 		</TabControl>
 	</Grid>
 </Window>

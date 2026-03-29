@@ -28,6 +28,7 @@ namespace CopagoAutomation
         private WindowAutomation? _windowAutomation;
         private CancellationTokenSource? _abcCts;
         private CancellationTokenSource? _xCts;
+        private CancellationTokenSource? _stundenCts;
         private CalibrationData? _calibrationData;
         private CalibrationService? _calibrationService;
         private MainViewModel? _mainViewModel;
@@ -63,9 +64,14 @@ namespace CopagoAutomation
 
             AbcSammelordner.LostFocus += AbcStorageFields_LostFocus;
             XSammelordner.LostFocus += XStorageFields_LostFocus;
+            StundenSammelordner.LostFocus += StundenStorageFields_LostFocus;
 
             AbcPosList.SelectionChanged += AbcPosList_SelectionChanged;
             XPosList.SelectionChanged += XPosList_SelectionChanged;
+            StundenPosList.SelectionChanged += StundenPosList_SelectionChanged;
+
+            StundenModeLaptop.Checked += StundenMode_Checked;
+            StundenModeDocking.Checked += StundenMode_Checked;
 
             LoadPosEntries();
             LoadSettings();
@@ -90,6 +96,7 @@ namespace CopagoAutomation
                 _mainViewModel = new MainViewModel(_calibrationService);
 
                 LoadXYearComboBox();
+                StundenDatum.SelectedDate = DateTime.Today.AddDays(-1);
             }
             catch (Exception ex)
             {
@@ -130,6 +137,7 @@ namespace CopagoAutomation
             UpdateAbcSaveModeUi();
             ApplyXStorageSettingsToUi();
             UpdateXSaveModeUi();
+            ApplyStundenStorageSettingsToUi();
             RestorePosSelections();
         }
 
@@ -163,11 +171,13 @@ namespace CopagoAutomation
 
             AbcPosList.Items.Clear();
             XPosList.Items.Clear();
+            StundenPosList.Items.Clear();
 
             foreach (string pos in allPos)
             {
                 AbcPosList.Items.Add(pos);
                 XPosList.Items.Add(pos);
+                StundenPosList.Items.Add(pos);
             }
         }
 
@@ -360,6 +370,12 @@ namespace CopagoAutomation
                 if (_settings.SelectedXPosValues.Contains(item.ToString()))
                     XPosList.SelectedItems.Add(item);
             XPosList.SelectionChanged += XPosList_SelectionChanged;
+
+            StundenPosList.SelectionChanged -= StundenPosList_SelectionChanged;
+            foreach (var item in StundenPosList.Items)
+                if (_settings.SelectedStundenleistungPosValues.Contains(item.ToString()))
+                    StundenPosList.SelectedItems.Add(item);
+            StundenPosList.SelectionChanged += StundenPosList_SelectionChanged;
         }
 
         private async void AbcStart_Click(object sender, RoutedEventArgs e)
@@ -521,9 +537,12 @@ namespace CopagoAutomation
         {
             if (_mainViewModel == null) return;
 
-            MachineMode machineMode = profileName == CalibrationProfiles.XListe
-                ? (_settings?.XMode ?? MachineMode.Laptop)
-                : (_settings?.AbcMode ?? MachineMode.Laptop);
+            MachineMode machineMode = profileName switch
+            {
+                CalibrationProfiles.XListe          => _settings?.XMode ?? MachineMode.Laptop,
+                CalibrationProfiles.Stundenleistung => _settings?.StundenleistungMode ?? MachineMode.Laptop,
+                _                                   => _settings?.AbcMode ?? MachineMode.Laptop
+            };
             string modeName = GetCalibrationModeName(machineMode);
             _mainViewModel.StartCalibration(modeName, profileName);
 
@@ -534,6 +553,133 @@ namespace CopagoAutomation
             {
                 await SaveCalibrationDataAsync();
             }
+        }
+
+        // ===================== STUNDENLEISTUNG =====================
+
+        private async void StundenMode_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.StundenleistungMode = StundenModeLaptop.IsChecked == true ? MachineMode.Laptop : MachineMode.Docking;
+            await SaveSettingsAsync();
+        }
+
+        private async void StundenSaveModeChanged(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.StundenleistungSaveMode = StundenSaveModeSemco.IsChecked == true ? SaveMode.SemcoUpload : SaveMode.Alternativ;
+            UpdateStundenSaveModeUi();
+            await SaveSettingsAsync();
+        }
+
+        private void ApplyStundenStorageSettingsToUi()
+        {
+            if (_settings == null || StundenSaveModeSemco == null || StundenSaveModeAlt == null || StundenSammelordner == null)
+                return;
+
+            if (_settings.StundenleistungSaveMode == SaveMode.SemcoUpload)
+                StundenSaveModeSemco.IsChecked = true;
+            else
+                StundenSaveModeAlt.IsChecked = true;
+
+            StundenSammelordner.Text = _settings.StundenleistungSammelordnerPath;
+            UpdateStundenSaveModeUi();
+        }
+
+        private void UpdateStundenSaveModeUi()
+        {
+            if (_settings == null || StundenSammelordner == null) return;
+
+            bool isSemco = _settings.StundenleistungSaveMode == SaveMode.SemcoUpload;
+            StundenSammelordner.IsEnabled = !isSemco;
+            StundenSammelordner.Text = isSemco ? "" : _settings.StundenleistungSammelordnerPath;
+        }
+
+        private async void StundenStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null || StundenSammelordner == null) return;
+            _settings.StundenleistungSammelordnerPath = StundenSammelordner.Text;
+            await SaveSettingsAsync();
+        }
+
+        private async void StundenBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null || StundenSammelordner == null) return;
+
+            var dialog = new OpenFolderDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                _settings.StundenleistungSammelordnerPath = dialog.FolderName;
+                StundenSammelordner.Text = dialog.FolderName;
+                await SaveSettingsAsync();
+            }
+            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        }
+
+        private async void StundenPosList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.SelectedStundenleistungPosValues = StundenPosList.SelectedItems.Cast<string>().ToList();
+            await SaveSettingsAsync();
+        }
+
+        private async void StundenResetPos_Click(object sender, RoutedEventArgs e)
+        {
+            StundenPosList.SelectedItems.Clear();
+            await SaveSettingsAsync();
+        }
+
+        private void StundenCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            RunCalibration(CalibrationProfiles.Stundenleistung);
+        }
+
+        private async void StundenStart_Click(object sender, RoutedEventArgs e)
+        {
+            if (_automationService == null || _settings == null) return;
+
+            var request = new StundenleistungStartRequest
+            {
+                Mode             = _settings.StundenleistungMode,
+                SaveMode         = _settings.StundenleistungSaveMode,
+                BaseFolder       = _settings.StundenleistungBaseFolder ?? string.Empty,
+                SammelordnerPath = _settings.StundenleistungSammelordnerPath,
+                SelectedPosValues = StundenPosList.SelectedItems.Cast<string>().ToList(),
+                Date             = StundenDatum.SelectedDate ?? DateTime.Today.AddDays(-1)
+            };
+
+            _stundenCts = new CancellationTokenSource();
+            StundenStartButton.IsEnabled = false;
+            StundenStopButton.IsEnabled  = true;
+            StundenLogBox.Clear();
+            try
+            {
+                var token = _stundenCts.Token;
+                var logs = await Task.Run(() => _automationService.StartStundenleistungAutomation(request, token), token);
+                foreach (var log in logs)
+                    StundenLogBox.AppendText(log + Environment.NewLine);
+            }
+            catch (OperationCanceledException)
+            {
+                StundenLogBox.AppendText("Automation abgebrochen." + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                StundenLogBox.AppendText($"Fehler: {ex.Message}{Environment.NewLine}");
+                MessageBox.Show($"Fehler bei der Stundenleistung-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                StundenStartButton.IsEnabled = true;
+                StundenStopButton.IsEnabled  = false;
+                _stundenCts.Dispose();
+                _stundenCts = null;
+            }
+        }
+
+        private void StundenStop_Click(object sender, RoutedEventArgs e)
+        {
+            _stundenCts?.Cancel();
         }
     }
 
