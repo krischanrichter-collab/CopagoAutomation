@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using CopagoAutomation.Calibration;
 using CopagoAutomation.Automation;
+using CopagoAutomation.Models;
 
 namespace CopagoAutomation.ViewModels
 {
@@ -43,7 +44,7 @@ namespace CopagoAutomation.ViewModels
 
 		public int LastCapturedY => _lastCapturedY;
 
-		public void StartCalibration(string modeName, string profileName, bool includeOptionalSteps = true)
+		public void StartCalibration(string modeName, string profileName, OutputFormat format = OutputFormat.Pdf)
 		{
 			if (string.IsNullOrWhiteSpace(modeName))
 				throw new ArgumentException("modeName darf nicht leer sein.", nameof(modeName));
@@ -52,7 +53,7 @@ namespace CopagoAutomation.ViewModels
 				throw new ArgumentException("profileName darf nicht leer sein.", nameof(profileName));
 
 			_currentCalibrationModeName = modeName;
-			_calibrationRunner = new CalibrationRunner(profileName, includeOptionalSteps);
+			_calibrationRunner = new CalibrationRunner(profileName, format);
 
 			ResetLastCapture();
 			NotifyCalibrationStateChanged();

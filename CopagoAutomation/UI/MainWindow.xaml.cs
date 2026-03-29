@@ -558,8 +558,7 @@ namespace CopagoAutomation
                 _                                   => _settings?.AbcOutputFormat ?? OutputFormat.Pdf
             };
             string modeName = GetCalibrationModeName(machineMode, outputFormat);
-            bool includeOptional = outputFormat == OutputFormat.Excel;
-            _mainViewModel.StartCalibration(modeName, profileName, includeOptional);
+            _mainViewModel.StartCalibration(modeName, profileName, outputFormat);
 
             WindowState = WindowState.Minimized;
 

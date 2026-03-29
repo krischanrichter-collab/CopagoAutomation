@@ -143,7 +143,10 @@ var point = profile.Points.FirstOrDefault(p =>
 			ValidateModeName(modeName);
 			ValidateProfileName(profileName);
 
-			var requiredKeys = CalibrationDefinitions.GetRequiredKeysForProfile(profileName);
+			var format = modeName.EndsWith("_excel", System.StringComparison.OrdinalIgnoreCase)
+				? Models.OutputFormat.Excel
+				: Models.OutputFormat.Pdf;
+			var requiredKeys = CalibrationDefinitions.GetRequiredKeysForProfile(profileName, format);
 			if (requiredKeys.Count == 0)
 				return false;
 

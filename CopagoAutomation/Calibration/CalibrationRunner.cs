@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using CopagoAutomation.Models;
 
 namespace CopagoAutomation.Calibration
 {
@@ -28,7 +29,7 @@ namespace CopagoAutomation.Calibration
 
 		public IReadOnlyList<CalibrationStepDefinition> Steps => _steps;
 
-		public CalibrationRunner(string profileName, bool includeOptionalSteps = true)
+		public CalibrationRunner(string profileName, OutputFormat format = OutputFormat.Pdf)
 		{
 			if (string.IsNullOrWhiteSpace(profileName))
 				throw new ArgumentException("Profile name must not be empty.", nameof(profileName));
@@ -39,12 +40,21 @@ namespace CopagoAutomation.Calibration
 			_steps = new List<CalibrationStepDefinition>();
 			foreach (var step in all)
 			{
-				if (step.IsRequired || includeOptionalSteps)
+				bool applicable = format == OutputFormat.Excel
+					? !IsExclusivelPdf(step.Key)
+					: !IsExclusivelyExcel(step.Key);
+				if (applicable)
 					_steps.Add(step);
 			}
 
 			CurrentIndex = 0;
 		}
+
+		private static bool IsExclusivelPdf(string key) =>
+			key is "OutputSave" or "SaveDialogPath" or "SaveDialogFilename" or "OutputClose";
+
+		private static bool IsExclusivelyExcel(string key) =>
+			key is "OutputExcelExport";
 
 		public void Reset()
 		{

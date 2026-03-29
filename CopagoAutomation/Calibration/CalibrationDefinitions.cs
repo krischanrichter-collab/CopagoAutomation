@@ -1,9 +1,20 @@
 using System.Collections.Generic;
+using CopagoAutomation.Models;
 
 namespace CopagoAutomation.Calibration
 {
 	public static class CalibrationDefinitions
 	{
+		// Schritte die nur im PDF-Modus kalibriert werden (Diskette)
+		private static readonly HashSet<string> PdfOnlyKeys = new(System.StringComparer.OrdinalIgnoreCase)
+			{ "OutputSave" };
+
+		// Schritte die nur im Excel-Modus kalibriert werden
+		private static readonly HashSet<string> ExcelOnlyKeys = new(System.StringComparer.OrdinalIgnoreCase)
+			{ "OutputExcelExport" };
+
+		private static bool IsStepApplicable(string key, OutputFormat format) =>
+			format == OutputFormat.Excel ? !PdfOnlyKeys.Contains(key) : !ExcelOnlyKeys.Contains(key);
 		// Deutsche Tastatur obere Reihe: Q W E R T Z U I O P (Schritte 1–10)
 
 		public static readonly IReadOnlyList<CalibrationStepDefinition> AbcAnalyseSteps = new[]
@@ -265,13 +276,18 @@ namespace CopagoAutomation.Calibration
 			return keys;
 		}
 
-		public static IReadOnlyList<string> GetRequiredKeysForProfile(string profileName)
+		public static IReadOnlyList<string> GetRequiredKeysForProfile(string profileName, OutputFormat format = OutputFormat.Pdf)
 		{
 			var steps = GetStepsForProfile(profileName);
 			var keys = new List<string>(steps.Count);
 			foreach (var step in steps)
-				if (step.IsRequired)
+			{
+				if (!IsStepApplicable(step.Key, format)) continue;
+				// Im Excel-Modus ist OutputExcelExport pflicht (auch wenn IsRequired=false gesetzt)
+				bool required = step.IsRequired || (format == OutputFormat.Excel && ExcelOnlyKeys.Contains(step.Key));
+				if (required)
 					keys.Add(step.Key);
+			}
 			return keys;
 		}
 	}
