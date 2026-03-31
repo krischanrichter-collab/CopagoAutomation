@@ -11,7 +11,7 @@ namespace CopagoAutomation.Calibration
 
 		// Schritte die nur im Excel-Modus kalibriert werden
 		private static readonly HashSet<string> ExcelOnlyKeys = new(System.StringComparer.OrdinalIgnoreCase)
-			{ "OutputExcelExport" };
+			{ "OutputExcelExport", "ConfirmOk" };
 
 		private static bool IsStepApplicable(string key, OutputFormat format) =>
 			format == OutputFormat.Excel ? !PdfOnlyKeys.Contains(key) : !ExcelOnlyKeys.Contains(key);
@@ -53,6 +53,15 @@ namespace CopagoAutomation.Calibration
 			},
 			new CalibrationStepDefinition
 			{
+				Key             = "OutputExcelExport",
+				Title           = "Excel Export Button (nur Excel-Modus)",
+				HotkeyDigit     = 5,
+				HotkeyText      = "Strg+Alt+T",
+				InstructionText = "Nur für Excel-Modus: Sobald das Ausgabe-Fenster erscheint, platziere die Maus mittig auf dem 'Excel Export' Button und drücke dann Strg+Alt+T.",
+				IsRequired      = false
+			},
+			new CalibrationStepDefinition
+			{
 				Key             = "OutputSave",
 				Title           = "Disketten-Symbol (Speichern)",
 				HotkeyDigit     = 5,
@@ -85,11 +94,11 @@ namespace CopagoAutomation.Calibration
 			},
 			new CalibrationStepDefinition
 			{
-				Key             = "OutputExcelExport",
-				Title           = "Excel Export Button (nur Excel-Modus)",
+				Key             = "ConfirmOk",
+				Title           = "OK-Button (Bestätigungsmeldung, nur Excel-Modus)",
 				HotkeyDigit     = 9,
 				HotkeyText      = "Strg+Alt+O",
-				InstructionText = "Nur für Excel-Modus: Platziere die Maus mittig auf dem 'Excel Export' Button im Ausgabe-Fenster und drücke dann Strg+Alt+O.",
+				InstructionText = "Nur für Excel-Modus: Nach dem Speichern erscheint eine Bestätigungsmeldung. Platziere die Maus auf dem OK-Button und drücke dann Strg+Alt+O.",
 				IsRequired      = false
 			}
 		};
@@ -146,6 +155,15 @@ namespace CopagoAutomation.Calibration
 			},
 			new CalibrationStepDefinition
 			{
+				Key             = "OutputExcelExport",
+				Title           = "Excel Export Button (nur Excel-Modus)",
+				HotkeyDigit     = 7,
+				HotkeyText      = "Strg+Alt+U",
+				InstructionText = "Nur für Excel-Modus: Sobald das Ausgabe-Fenster erscheint, platziere die Maus mittig auf dem 'Excel Export' Button und drücke dann Strg+Alt+U.",
+				IsRequired      = false
+			},
+			new CalibrationStepDefinition
+			{
 				Key             = "OutputSave",
 				Title           = "Disketten-Symbol (Speichern)",
 				HotkeyDigit     = 7,
@@ -178,11 +196,11 @@ namespace CopagoAutomation.Calibration
 			},
 			new CalibrationStepDefinition
 			{
-				Key             = "OutputExcelExport",
-				Title           = "Excel Export Button (nur Excel-Modus)",
-				HotkeyDigit     = 7,
-				HotkeyText      = "Strg+Alt+U",
-				InstructionText = "Nur für Excel-Modus: Platziere die Maus mittig auf dem 'Excel Export' Button im Ausgabe-Fenster und drücke dann Strg+Alt+U. (Ersetzt Schritt 7 'Diskette' im Excel-Modus)",
+				Key             = "ConfirmOk",
+				Title           = "OK-Button (Bestätigungsmeldung, nur Excel-Modus)",
+				HotkeyDigit     = 10,
+				HotkeyText      = "Strg+Alt+P",
+				InstructionText = "Nur für Excel-Modus: Nach dem Speichern erscheint eine Bestätigungsmeldung. Platziere die Maus auf dem OK-Button und drücke dann Strg+Alt+P.",
 				IsRequired      = false
 			}
 		};
@@ -212,6 +230,15 @@ namespace CopagoAutomation.Calibration
 				HotkeyDigit     = 3,
 				HotkeyText      = "Strg+Alt+E",
 				InstructionText = "Platziere die Maus mittig auf dem \"Start\" Feld und drücke dann Strg+Alt+E."
+			},
+			new CalibrationStepDefinition
+			{
+				Key             = "OutputExcelExport",
+				Title           = "Excel Export Button (nur Excel-Modus)",
+				HotkeyDigit     = 4,
+				HotkeyText      = "Strg+Alt+R",
+				InstructionText = "Nur für Excel-Modus: Sobald das Ausgabe-Fenster erscheint, platziere die Maus mittig auf dem 'Excel Export' Button und drücke dann Strg+Alt+R.",
+				IsRequired      = false
 			},
 			new CalibrationStepDefinition
 			{
@@ -247,11 +274,11 @@ namespace CopagoAutomation.Calibration
 			},
 			new CalibrationStepDefinition
 			{
-				Key             = "OutputExcelExport",
-				Title           = "Excel Export Button (nur Excel-Modus)",
+				Key             = "ConfirmOk",
+				Title           = "OK-Button (Bestätigungsmeldung, nur Excel-Modus)",
 				HotkeyDigit     = 8,
 				HotkeyText      = "Strg+Alt+I",
-				InstructionText = "Nur für Excel-Modus: Platziere die Maus mittig auf dem 'Excel Export' Button im Ausgabe-Fenster und drücke dann Strg+Alt+I.",
+				InstructionText = "Nur für Excel-Modus: Nach dem Speichern erscheint eine Bestätigungsmeldung. Platziere die Maus auf dem OK-Button und drücke dann Strg+Alt+I.",
 				IsRequired      = false
 			}
 		};

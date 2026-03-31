@@ -560,12 +560,19 @@ namespace CopagoAutomation
             string modeName = GetCalibrationModeName(machineMode, outputFormat);
             _mainViewModel.StartCalibration(modeName, profileName, outputFormat);
 
-            WindowState = WindowState.Minimized;
+            Hide();
 
             var prompt = new CalibrationPromptWindow(this, _mainViewModel);
-            if (prompt.ShowDialog() == true)
+            try
             {
-                await SaveCalibrationDataAsync();
+                if (prompt.ShowDialog() == true)
+                {
+                    await SaveCalibrationDataAsync();
+                }
+            }
+            finally
+            {
+                Show();
             }
         }
 

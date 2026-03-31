@@ -109,10 +109,16 @@ namespace CopagoAutomation.Automation
             if (outputClosePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'OutputClose' fehlt."); return logs; }
 
             var outputExcelExportPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputExcelExport", boundWindow);
+            var confirmOkPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "ConfirmOk", boundWindow);
             bool isExcel = request.OutputFormat == OutputFormat.Excel;
             if (isExcel && outputExcelExportPoint == null)
             {
                 logs.Add("Fehler: Kalibrierpunkt 'OutputExcelExport' fehlt (Excel-Modus).");
+                return logs;
+            }
+            if (isExcel && confirmOkPoint == null)
+            {
+                logs.Add("Fehler: Kalibrierpunkt 'ConfirmOk' fehlt (Excel-Modus).");
                 return logs;
             }
             string extension = isExcel ? ".xlsx" : ".pdf";
@@ -254,10 +260,10 @@ namespace CopagoAutomation.Automation
 
                         if (isExcel)
                         {
-                            logs.Add("Warte auf Excel-Bestätigungsdialog...");
-                            var windowsBeforeConfirm = _windowAutomation.GetVisibleTopLevelWindowHandles();
-                            _windowAutomation.WaitForNewWindowAndPressEnter(windowsBeforeConfirm, ct: ct);
-                            logs.Add("Excel-Bestätigungsdialog bestätigt.");
+                            logs.Add("Warte auf Excel-Bestätigungsmeldung...");
+                            Sleep(1500);
+                            ClickPoint(confirmOkPoint!, boundWindow);
+                            logs.Add("Bestätigungsmeldung bestätigt.");
                         }
 
                         logs.Add("Warte auf Schließen des Report-Output-Fensters...");
