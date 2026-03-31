@@ -85,7 +85,7 @@ namespace CopagoAutomation.Automation
             var runReportPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "RunReport", boundWindow);
             if (runReportPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'RunReport' fehlt."); return logs; }
             var outputSavePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputSave", boundWindow);
-            if (outputSavePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'OutputSave' fehlt."); return logs; }
+            if (outputSavePoint == null && request.OutputFormat != OutputFormat.Excel) { logs.Add("Fehler: Kalibrierpunkt 'OutputSave' fehlt."); return logs; }
             var saveDialogPathPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "SaveDialogPath", boundWindow);
             if (saveDialogPathPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'SaveDialogPath' fehlt."); return logs; }
             var saveDialogFilenamePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "SaveDialogFilename", boundWindow);
@@ -185,40 +185,26 @@ namespace CopagoAutomation.Automation
                         if (!string.IsNullOrEmpty(fileDir))
                             Directory.CreateDirectory(fileDir);
 
-                        if (!WaitForSaveDialog(windowsBeforeSaveDialog, logs, out IntPtr saveDialogHandle, ct: ct))
+                        if (!WaitForSaveDialog(windowsBeforeSaveDialog, logs, out IntPtr _, ct: ct))
                             return logs;
 
-                        if (isExcel)
-                        {
-                            if (!_windowAutomation.SetSaveDialogPath(saveDialogHandle, filePath, out string pathMsg))
-                            {
-                                logs.Add($"Fehler beim Setzen des Speicherpfads: {pathMsg}");
-                                return logs;
-                            }
-                            logs.Add(pathMsg);
-                            Sleep(DefaultActionDelayMs);
-                            _windowAutomation.KeyPress(0x0D); // Enter bestätigt den Speichern-Dialog
-                        }
-                        else
-                        {
-                            ClickPoint(saveDialogPathPoint, boundWindow);
-                            Sleep(DefaultActionDelayMs);
-                            _windowAutomation.SelectAll();
-                            Sleep(80);
-                            _windowAutomation.TypeText(fileDir);
-                            Sleep(DefaultActionDelayMs);
-                            _windowAutomation.KeyPress(0x0D);
-                            Sleep(DefaultActionDelayMs);
+                        ClickPoint(saveDialogPathPoint, boundWindow);
+                        Sleep(DefaultActionDelayMs);
+                        _windowAutomation.SelectAll();
+                        Sleep(80);
+                        _windowAutomation.TypeText(fileDir);
+                        Sleep(DefaultActionDelayMs);
+                        _windowAutomation.KeyPress(0x0D);
+                        Sleep(DefaultActionDelayMs);
 
-                            ClickPoint(saveDialogFilenamePoint, boundWindow);
-                            Sleep(DefaultActionDelayMs);
-                            _windowAutomation.SelectAll();
-                            Sleep(80);
-                            _windowAutomation.TypeText(fileName);
-                            Sleep(DefaultActionDelayMs);
+                        ClickPoint(saveDialogFilenamePoint, boundWindow);
+                        Sleep(DefaultActionDelayMs);
+                        _windowAutomation.SelectAll();
+                        Sleep(80);
+                        _windowAutomation.TypeText(fileName);
+                        Sleep(DefaultActionDelayMs);
 
-                            ClickPoint(outputClosePoint, boundWindow);
-                        }
+                        ClickPoint(outputClosePoint, boundWindow);
 
                         logs.Add($"Gespeichert für POS {currentPos} / {currentDateText}");
                         Sleep(DefaultSaveDialogWaitMs);

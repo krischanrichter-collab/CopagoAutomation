@@ -50,8 +50,7 @@ namespace CopagoAutomation.Calibration
 			CurrentIndex = 0;
 		}
 
-		private static bool IsExclusivelPdf(string key) =>
-			key is "OutputSave" or "SaveDialogPath" or "SaveDialogFilename" or "OutputClose";
+		private static bool IsExclusivelPdf(string key) => key is "OutputSave";
 
 		private static bool IsExclusivelyExcel(string key) =>
 			key is "OutputExcelExport";
