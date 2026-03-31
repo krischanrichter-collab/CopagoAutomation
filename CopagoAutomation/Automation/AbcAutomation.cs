@@ -264,15 +264,19 @@ namespace CopagoAutomation.Automation
                             if (!WaitForConfirmDialog(windowsBeforeSaveDialog, logs, out IntPtr confirmHandle, ct: ct))
                                 return logs;
                             _windowAutomation.TryActivateWindow(confirmHandle);
-                            Sleep(300);
+                            Sleep(150);
                             ClickPoint(confirmOkPoint!, boundWindow);
                             logs.Add("Bestätigungsmeldung bestätigt.");
+                            Sleep(500);
                         }
 
-                        logs.Add("Warte auf Schließen des Report-Output-Fensters...");
-                        _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
+                        if (_windowAutomation.IsValidHandle(outputWindowHandle))
+                        {
+                            logs.Add("Warte auf Schließen des Report-Output-Fensters...");
+                            _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
+                        }
                         logs.Add("Report-Output-Fenster geschlossen.");
-                        Sleep(800);
+                        Sleep(300);
                     }
                     catch (OperationCanceledException)
                     {

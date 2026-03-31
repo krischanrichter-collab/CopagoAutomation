@@ -12,4 +12,8 @@
     <Folder Include="Docs\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="KatzLogo.png" />
+  </ItemGroup>
+
 </Project>
