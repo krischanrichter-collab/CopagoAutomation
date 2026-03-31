@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using CopagoAutomation.Calibration;
 using CopagoAutomation.Models;
@@ -23,8 +22,6 @@ namespace CopagoAutomation.Automation
 
         private const string CopagoWindowTitlePart = "copago Office Online Verwaltung";
 
-        private const ushort VK_CONTROL = 0x11;
-        private const ushort VK_A = 0x41;
         private const ushort VK_RETURN = 0x0D;
 
         private readonly WindowAutomation _windowAutomation;
@@ -269,7 +266,10 @@ namespace CopagoAutomation.Automation
                     if (isExcel)
                     {
                         logs.Add("Warte auf Excel-Bestätigungsmeldung...");
-                        Sleep(1500);
+                        if (!WaitForConfirmDialog(windowsBeforeSaveDialog, logs, out IntPtr confirmHandle, ct: ct))
+                            return logs;
+                        _windowAutomation.TryActivateWindow(confirmHandle);
+                        Sleep(300);
                         ClickPoint(confirmOkPoint!, boundWindow);
                         logs.Add("Bestätigungsmeldung bestätigt.");
                     }
@@ -277,6 +277,7 @@ namespace CopagoAutomation.Automation
                     logs.Add("Warte auf Schließen des Report-Output-Fensters...");
                     _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
                     logs.Add("Report-Output-Fenster geschlossen.");
+                    Sleep(800);
                 }
                 catch (OperationCanceledException)
                 {
@@ -313,6 +314,30 @@ namespace CopagoAutomation.Automation
                 ct.WaitHandle.WaitOne(ReportReadyPollIntervalMs);
             }
             logs.Add($"Timeout: Save-Dialog nicht innerhalb von {timeoutMs / 1000}s erschienen.");
+            return false;
+        }
+
+        private bool WaitForConfirmDialog(HashSet<IntPtr> windowsBefore, List<string> logs, out IntPtr dialogHandle, int timeoutMs = 15_000, CancellationToken ct = default)
+        {
+            dialogHandle = IntPtr.Zero;
+            logs.Add("Warte auf Bestätigungsmeldung...");
+            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            while (DateTime.UtcNow < deadline)
+            {
+                ct.ThrowIfCancellationRequested();
+                var windowsNow = _windowAutomation.GetVisibleTopLevelWindowHandles();
+                var newHandle = windowsNow.FirstOrDefault(h => !windowsBefore.Contains(h));
+                if (newHandle != IntPtr.Zero)
+                {
+                    ct.WaitHandle.WaitOne(ReportReadyPollIntervalMs);
+                    ct.ThrowIfCancellationRequested();
+                    dialogHandle = newHandle;
+                    logs.Add("Bestätigungsmeldung erkannt.");
+                    return true;
+                }
+                ct.WaitHandle.WaitOne(ReportReadyPollIntervalMs);
+            }
+            logs.Add($"Timeout: Bestätigungsmeldung nicht innerhalb von {timeoutMs / 1000}s erschienen.");
             return false;
         }
 
@@ -447,174 +472,6 @@ namespace CopagoAutomation.Automation
         private static void Sleep(int milliseconds)
         {
             Thread.Sleep(milliseconds);
-        }
-
-        private static void LeftClick()
-        {
-            var inputs = new INPUT[2];
-
-            inputs[0] = new INPUT
-            {
-                type = INPUT_MOUSE,
-                U = new InputUnion
-                {
-                    mi = new MOUSEINPUT
-                    {
-                        dwFlags = MOUSEEVENTF_LEFTDOWN
-                    }
-                }
-            };
-
-            inputs[1] = new INPUT
-            {
-                type = INPUT_MOUSE,
-                U = new InputUnion
-                {
-                    mi = new MOUSEINPUT
-                    {
-                        dwFlags = MOUSEEVENTF_LEFTUP
-                    }
-                }
-            };
-
-            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-        }
-
-        private static void KeyPress(ushort virtualKey)
-        {
-            KeyDown(virtualKey);
-            Sleep(20);
-            KeyUp(virtualKey);
-        }
-
-        private static void KeyDown(ushort virtualKey)
-        {
-            var input = new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                U = new InputUnion
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wVk = virtualKey,
-                        dwFlags = 0
-                    }
-                }
-            };
-
-            SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
-        }
-
-        private static void KeyUp(ushort virtualKey)
-        {
-            var input = new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                U = new InputUnion
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wVk = virtualKey,
-                        dwFlags = KEYEVENTF_KEYUP
-                    }
-                }
-            };
-
-            SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
-        }
-
-        private static void SendUnicodeChar(char ch)
-        {
-            var keyDown = new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                U = new InputUnion
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wScan = ch,
-                        dwFlags = KEYEVENTF_UNICODE
-                    }
-                }
-            };
-
-            var keyUp = new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                U = new InputUnion
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wScan = ch,
-                        dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
-                    }
-                }
-            };
-
-            var inputs = new[] { keyDown, keyUp };
-            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-        }
-
-        private const int INPUT_MOUSE = 0;
-        private const int INPUT_KEYBOARD = 1;
-
-        private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
-        private const uint MOUSEEVENTF_LEFTUP = 0x0004;
-
-        private const uint KEYEVENTF_KEYUP = 0x0002;
-        private const uint KEYEVENTF_UNICODE = 0x0004;
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool SetCursorPos(int x, int y);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct INPUT
-        {
-            public int type;
-            public InputUnion U;
-        }
-
-        [StructLayout(LayoutKind.Explicit)]
-        private struct InputUnion
-        {
-            [FieldOffset(0)]
-            public MOUSEINPUT mi;
-            [FieldOffset(0)]
-            public KEYBDINPUT ki;
-            [FieldOffset(0)]
-            public HARDWAREINPUT hi;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct MOUSEINPUT
-        {
-            public int dx;
-            public int dy;
-            public uint mouseData;
-            public uint dwFlags;
-            public uint time;
-            public IntPtr dwExtraInfo;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct KEYBDINPUT
-        {
-            public ushort wVk;
-            public ushort wScan;
-            public uint dwFlags;
-            public uint time;
-            public IntPtr dwExtraInfo;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct HARDWAREINPUT
-        {
-            public uint uMsg;
-            public ushort wParamL;
-            public ushort wParamH;
         }
     }
 }

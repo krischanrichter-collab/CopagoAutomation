@@ -261,7 +261,10 @@ namespace CopagoAutomation.Automation
                         if (isExcel)
                         {
                             logs.Add("Warte auf Excel-Bestätigungsmeldung...");
-                            Sleep(1500);
+                            if (!WaitForConfirmDialog(windowsBeforeSaveDialog, logs, out IntPtr confirmHandle, ct: ct))
+                                return logs;
+                            _windowAutomation.TryActivateWindow(confirmHandle);
+                            Sleep(300);
                             ClickPoint(confirmOkPoint!, boundWindow);
                             logs.Add("Bestätigungsmeldung bestätigt.");
                         }
@@ -269,6 +272,7 @@ namespace CopagoAutomation.Automation
                         logs.Add("Warte auf Schließen des Report-Output-Fensters...");
                         _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
                         logs.Add("Report-Output-Fenster geschlossen.");
+                        Sleep(800);
                     }
                     catch (OperationCanceledException)
                     {
@@ -314,6 +318,30 @@ namespace CopagoAutomation.Automation
                 ct.WaitHandle.WaitOne(ReportReadyPollIntervalMs);
             }
             logs.Add($"Timeout: Save-Dialog nicht innerhalb von {timeoutMs / 1000}s erschienen.");
+            return false;
+        }
+
+        private bool WaitForConfirmDialog(HashSet<IntPtr> windowsBefore, List<string> logs, out IntPtr dialogHandle, int timeoutMs = 15_000, CancellationToken ct = default)
+        {
+            dialogHandle = IntPtr.Zero;
+            logs.Add("Warte auf Bestätigungsmeldung...");
+            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            while (DateTime.UtcNow < deadline)
+            {
+                ct.ThrowIfCancellationRequested();
+                var windowsNow = _windowAutomation.GetVisibleTopLevelWindowHandles();
+                var newHandle = windowsNow.FirstOrDefault(h => !windowsBefore.Contains(h));
+                if (newHandle != IntPtr.Zero)
+                {
+                    ct.WaitHandle.WaitOne(ReportReadyPollIntervalMs);
+                    ct.ThrowIfCancellationRequested();
+                    dialogHandle = newHandle;
+                    logs.Add("Bestätigungsmeldung erkannt.");
+                    return true;
+                }
+                ct.WaitHandle.WaitOne(ReportReadyPollIntervalMs);
+            }
+            logs.Add($"Timeout: Bestätigungsmeldung nicht innerhalb von {timeoutMs / 1000}s erschienen.");
             return false;
         }
 
