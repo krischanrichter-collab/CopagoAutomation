@@ -29,6 +29,7 @@ namespace CopagoAutomation
         private CancellationTokenSource? _abcCts;
         private CancellationTokenSource? _xCts;
         private CancellationTokenSource? _stundenCts;
+        private CancellationTokenSource? _artCts;
         private CalibrationData? _calibrationData;
         private CalibrationService? _calibrationService;
         private MainViewModel? _mainViewModel;
@@ -65,13 +66,18 @@ namespace CopagoAutomation
             StundenModeLaptop.Checked += StundenMode_Checked;
             StundenModeDocking.Checked += StundenMode_Checked;
 
+            ArtModeLaptop.Checked += ArtMode_Checked;
+            ArtModeDocking.Checked += ArtMode_Checked;
+
             AbcSammelordner.LostFocus += AbcStorageFields_LostFocus;
             XSammelordner.LostFocus += XStorageFields_LostFocus;
             StundenSammelordner.LostFocus += StundenStorageFields_LostFocus;
+            ArtSammelordner.LostFocus += ArtStorageFields_LostFocus;
 
             AbcPosList.SelectionChanged += AbcPosList_SelectionChanged;
             XPosList.SelectionChanged += XPosList_SelectionChanged;
             StundenPosList.SelectionChanged += StundenPosList_SelectionChanged;
+            ArtPosList.SelectionChanged += ArtPosList_SelectionChanged;
 
             LoadPosEntries();
             LoadSettings();
@@ -138,6 +144,7 @@ namespace CopagoAutomation
             ApplyXStorageSettingsToUi();
             UpdateXSaveModeUi();
             ApplyStundenStorageSettingsToUi();
+            ApplyArtStorageSettingsToUi();
             RestorePosSelections();
             ApplyOutputFormatToUi();
         }
@@ -179,6 +186,7 @@ namespace CopagoAutomation
                 AbcPosList.Items.Add(pos);
                 XPosList.Items.Add(pos);
                 StundenPosList.Items.Add(pos);
+                ArtPosList.Items.Add(pos);
             }
         }
 
@@ -379,6 +387,12 @@ namespace CopagoAutomation
                 if (_settings.SelectedStundenleistungPosValues.Contains(item.ToString()))
                     StundenPosList.SelectedItems.Add(item);
             StundenPosList.SelectionChanged += StundenPosList_SelectionChanged;
+
+            ArtPosList.SelectionChanged -= ArtPosList_SelectionChanged;
+            foreach (var item in ArtPosList.Items)
+                if (_settings.SelectedArtikelfrequenzPosValues.Contains(item.ToString()))
+                    ArtPosList.SelectedItems.Add(item);
+            ArtPosList.SelectionChanged += ArtPosList_SelectionChanged;
         }
 
         private async void AbcStart_Click(object sender, RoutedEventArgs e)
@@ -549,12 +563,14 @@ namespace CopagoAutomation
             {
                 CalibrationProfiles.XListe          => _settings?.XMode ?? MachineMode.Laptop,
                 CalibrationProfiles.Stundenleistung => _settings?.StundenleistungMode ?? MachineMode.Laptop,
+                CalibrationProfiles.Artikelfrequenz => _settings?.ArtikelfrequenzMode ?? MachineMode.Laptop,
                 _                                   => _settings?.AbcMode ?? MachineMode.Laptop
             };
             OutputFormat outputFormat = profileName switch
             {
                 CalibrationProfiles.XListe          => _settings?.XOutputFormat ?? OutputFormat.Pdf,
                 CalibrationProfiles.Stundenleistung => _settings?.StundenleistungOutputFormat ?? OutputFormat.Pdf,
+                CalibrationProfiles.Artikelfrequenz => _settings?.ArtikelfrequenzOutputFormat ?? OutputFormat.Pdf,
                 _                                   => _settings?.AbcOutputFormat ?? OutputFormat.Pdf
             };
             string modeName = GetCalibrationModeName(machineMode, outputFormat);
@@ -716,6 +732,8 @@ namespace CopagoAutomation
             XFormatExcel.IsChecked      = _settings.XOutputFormat        == OutputFormat.Excel;
             StundenFormatPdf.IsChecked  = _settings.StundenleistungOutputFormat == OutputFormat.Pdf;
             StundenFormatExcel.IsChecked= _settings.StundenleistungOutputFormat == OutputFormat.Excel;
+            ArtFormatPdf.IsChecked      = _settings.ArtikelfrequenzOutputFormat == OutputFormat.Pdf;
+            ArtFormatExcel.IsChecked    = _settings.ArtikelfrequenzOutputFormat == OutputFormat.Excel;
         }
 
         private async void AbcFormatChanged(object sender, RoutedEventArgs e)
@@ -737,6 +755,141 @@ namespace CopagoAutomation
             if (_settings == null) return;
             _settings.StundenleistungOutputFormat = StundenFormatExcel.IsChecked == true ? OutputFormat.Excel : OutputFormat.Pdf;
             await SaveSettingsAsync();
+        }
+
+        private async void ArtFormatChanged(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.ArtikelfrequenzOutputFormat = ArtFormatExcel.IsChecked == true ? OutputFormat.Excel : OutputFormat.Pdf;
+            await SaveSettingsAsync();
+        }
+
+        // ===================== ARTIKELFREQUENZ =====================
+
+        private async void ArtMode_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.ArtikelfrequenzMode = ArtModeLaptop.IsChecked == true ? MachineMode.Laptop : MachineMode.Docking;
+            await SaveSettingsAsync();
+        }
+
+        private async void ArtSaveModeChanged(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.ArtikelfrequenzSaveMode = ArtSaveModeSemco.IsChecked == true ? SaveMode.SemcoUpload : SaveMode.Alternativ;
+            UpdateArtSaveModeUi();
+            await SaveSettingsAsync();
+        }
+
+        private void ApplyArtStorageSettingsToUi()
+        {
+            if (_settings == null || ArtSaveModeSemco == null || ArtSaveModeAlt == null || ArtSammelordner == null)
+                return;
+
+            if (_settings.ArtikelfrequenzSaveMode == SaveMode.SemcoUpload)
+                ArtSaveModeSemco.IsChecked = true;
+            else
+                ArtSaveModeAlt.IsChecked = true;
+
+            ArtSammelordner.Text = _settings.ArtikelfrequenzSammelordnerPath;
+            UpdateArtSaveModeUi();
+        }
+
+        private void UpdateArtSaveModeUi()
+        {
+            if (_settings == null || ArtSammelordner == null) return;
+
+            bool isSemco = _settings.ArtikelfrequenzSaveMode == SaveMode.SemcoUpload;
+            ArtSammelordner.IsEnabled = !isSemco;
+            ArtSammelordner.Text = isSemco ? "" : _settings.ArtikelfrequenzSammelordnerPath;
+        }
+
+        private async void ArtStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null || ArtSammelordner == null) return;
+            _settings.ArtikelfrequenzSammelordnerPath = ArtSammelordner.Text;
+            await SaveSettingsAsync();
+        }
+
+        private async void ArtBrowseSammelordner_Click(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null || ArtSammelordner == null) return;
+
+            var dialog = new OpenFolderDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                _settings.ArtikelfrequenzSammelordnerPath = dialog.FolderName;
+                ArtSammelordner.Text = dialog.FolderName;
+                await SaveSettingsAsync();
+            }
+            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        }
+
+        private async void ArtPosList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (_settings == null) return;
+            _settings.SelectedArtikelfrequenzPosValues = ArtPosList.SelectedItems.Cast<string>().ToList();
+            await SaveSettingsAsync();
+        }
+
+        private async void ArtResetPos_Click(object sender, RoutedEventArgs e)
+        {
+            ArtPosList.SelectedItems.Clear();
+            await SaveSettingsAsync();
+        }
+
+        private void ArtCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            RunCalibration(CalibrationProfiles.Artikelfrequenz);
+        }
+
+        private async void ArtStart_Click(object sender, RoutedEventArgs e)
+        {
+            if (_automationService == null || _settings == null) return;
+
+            var request = new ArtikelfrequenzStartRequest
+            {
+                Mode              = _settings.ArtikelfrequenzMode,
+                OutputFormat      = _settings.ArtikelfrequenzOutputFormat,
+                SaveMode          = _settings.ArtikelfrequenzSaveMode,
+                BaseFolder        = _settings.ArtikelfrequenzBaseFolder ?? string.Empty,
+                SammelordnerPath  = _settings.ArtikelfrequenzSammelordnerPath,
+                SelectedPosValues = ArtPosList.SelectedItems.Cast<string>().ToList(),
+                Dates             = ArtDateSelector.GetDates()
+            };
+
+            _artCts = new CancellationTokenSource();
+            ArtStartButton.IsEnabled = false;
+            ArtStopButton.IsEnabled  = true;
+            ArtLogBox.Clear();
+            try
+            {
+                var token = _artCts.Token;
+                var logs = await Task.Run(() => _automationService.StartArtikelfrequenzAutomation(request, token), token);
+                foreach (var log in logs)
+                    ArtLogBox.AppendText(log + Environment.NewLine);
+            }
+            catch (OperationCanceledException)
+            {
+                ArtLogBox.AppendText("Automation abgebrochen." + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                ArtLogBox.AppendText($"Fehler: {ex.Message}{Environment.NewLine}");
+                MessageBox.Show($"Fehler bei der Artikelfrequenz-Automatisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                ArtStartButton.IsEnabled = true;
+                ArtStopButton.IsEnabled  = false;
+                _artCts.Dispose();
+                _artCts = null;
+            }
+        }
+
+        private void ArtStop_Click(object sender, RoutedEventArgs e)
+        {
+            _artCts?.Cancel();
         }
     }
 

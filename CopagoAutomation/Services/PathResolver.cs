@@ -28,6 +28,11 @@ namespace CopagoAutomation.Services
                 basePath    = saveMode == SaveMode.SemcoUpload ? _settings.StundenleistungBaseFolder : _settings.StundenleistungSammelordnerPath;
                 reportLabel = "Stundenleistung";
             }
+            else if (reportName.Contains("Artikelfrequenz", StringComparison.OrdinalIgnoreCase))
+            {
+                basePath    = saveMode == SaveMode.SemcoUpload ? _settings.ArtikelfrequenzBaseFolder : _settings.ArtikelfrequenzSammelordnerPath;
+                reportLabel = "Artikelfrequenz";
+            }
             else
             {
                 basePath    = saveMode == SaveMode.SemcoUpload ? _settings.XBaseFolder : _settings.XSammelordnerPath;

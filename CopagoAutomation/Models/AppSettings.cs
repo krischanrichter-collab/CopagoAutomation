@@ -78,6 +78,16 @@ public string? XSammelordnerPath { get; set; }
 		public bool UseTempPdfStrategy { get; set; } = true;
 
 		// =========================================
+		// Artikelfrequenz
+		// =========================================
+		public MachineMode ArtikelfrequenzMode { get; set; } = MachineMode.Laptop;
+		public SaveMode ArtikelfrequenzSaveMode { get; set; } = SaveMode.SemcoUpload;
+		public OutputFormat ArtikelfrequenzOutputFormat { get; set; } = OutputFormat.Pdf;
+		public string? ArtikelfrequenzBaseFolder { get; set; }
+		public string? ArtikelfrequenzSammelordnerPath { get; set; }
+		public List<string> SelectedArtikelfrequenzPosValues { get; set; } = new();
+
+		// =========================================
 		// Kalibrierung
 		// =========================================
 		public CalibrationSettings LaptopCalibration { get; set; } = CalibrationSettings.CreateDefault();
