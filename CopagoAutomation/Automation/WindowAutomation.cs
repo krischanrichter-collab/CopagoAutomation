@@ -127,6 +127,18 @@ namespace CopagoAutomation.Automation
         public static extern bool SetForegroundWindow(IntPtr hWnd);
 
         [DllImport("user32.dll")]
+        public static extern bool BringWindowToTop(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+        [DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        [DllImport("kernel32.dll")]
+        public static extern uint GetCurrentThreadId();
+
+        [DllImport("user32.dll")]
         public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
 
         [DllImport("user32.dll")]
@@ -549,8 +561,34 @@ namespace CopagoAutomation.Automation
             if (IsIconic(handle))
                 ShowWindow(handle, SW_RESTORE);
 
-            if (SetForegroundWindow(handle))
+            // Direkt versuchen
+            if (SetForegroundWindow(handle) && GetForegroundWindow() == handle)
                 return true;
+
+            // AttachThreadInput: umgeht Windows-Sperre für SetForegroundWindow
+            IntPtr foreground = GetForegroundWindow();
+            uint foregroundThread = foreground != IntPtr.Zero
+                ? GetWindowThreadProcessId(foreground, out _)
+                : 0;
+            uint targetThread = GetWindowThreadProcessId(handle, out _);
+            uint currentThread = GetCurrentThreadId();
+
+            bool attached = false;
+            try
+            {
+                if (foregroundThread != 0 && foregroundThread != currentThread)
+                {
+                    AttachThreadInput(currentThread, foregroundThread, true);
+                    attached = true;
+                }
+                BringWindowToTop(handle);
+                SetForegroundWindow(handle);
+            }
+            finally
+            {
+                if (attached)
+                    AttachThreadInput(currentThread, foregroundThread, false);
+            }
 
             return GetForegroundWindow() == handle;
         }

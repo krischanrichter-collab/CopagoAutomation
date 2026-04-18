@@ -16,7 +16,7 @@ namespace CopagoAutomation.Automation
         private const int DefaultActionDelayMs      = 250;
         private const int DefaultRunReportWaitMs    = 1500;
         private const int DefaultSaveDialogWaitMs   = 700;
-        private const int ReportReadyTimeoutMs      = 60_000;
+        private const int ReportReadyTimeoutMs      = 180_000;
         private const int ReportReadyPollIntervalMs = 500;
 
         private const string CopagoWindowTitlePart = "copago Office Online Verwaltung";
@@ -229,7 +229,8 @@ namespace CopagoAutomation.Automation
                             _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
                         }
                         logs.Add("Report-Output-Fenster geschlossen.");
-                        Sleep(300);
+                        _windowAutomation.TryActivateBoundWindow(boundWindow);
+                        Sleep(500);
                     }
                     catch (OperationCanceledException)
                     {
