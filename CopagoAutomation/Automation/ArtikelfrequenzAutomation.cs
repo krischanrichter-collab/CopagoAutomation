@@ -206,7 +206,7 @@ namespace CopagoAutomation.Automation
                         _windowAutomation.TypeText(fileName);
                         Sleep(DefaultActionDelayMs);
 
-                        ClickPoint(outputClosePoint, boundWindow);
+                        _windowAutomation.KeyPress(0x0D);
 
                         logs.Add($"Gespeichert für POS {currentPos} / {currentDateText}");
                         Sleep(DefaultSaveDialogWaitMs);
@@ -217,10 +217,10 @@ namespace CopagoAutomation.Automation
                             if (!WaitForConfirmDialog(windowsBeforeSaveDialog, logs, out IntPtr confirmHandle, ct: ct))
                                 return logs;
                             _windowAutomation.TryActivateWindow(confirmHandle);
-                            Sleep(150);
-                            ClickPoint(confirmOkPoint!, boundWindow);
+                            Sleep(300);
+                            _windowAutomation.KeyPress(0x0D);
                             logs.Add("Bestätigungsmeldung bestätigt.");
-                            Sleep(500);
+                            Sleep(800);
                         }
 
                         if (_windowAutomation.IsValidHandle(outputWindowHandle))
