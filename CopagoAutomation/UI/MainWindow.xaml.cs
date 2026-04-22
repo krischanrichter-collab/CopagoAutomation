@@ -30,6 +30,7 @@ namespace CopagoAutomation
         private CancellationTokenSource? _xCts;
         private CancellationTokenSource? _stundenCts;
         private CancellationTokenSource? _artCts;
+        private readonly EscapeWatcher _escapeWatcher = new();
         private CalibrationData? _calibrationData;
         private CalibrationService? _calibrationService;
         private MainViewModel? _mainViewModel;
@@ -85,6 +86,7 @@ namespace CopagoAutomation
             Loaded += MainWindow_Loaded;
             SourceInitialized += MainWindow_SourceInitialized;
             Closed += MainWindow_Closed;
+            _escapeWatcher.EscapePressed += OnEscapePressed;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -121,10 +123,19 @@ namespace CopagoAutomation
 
         private void MainWindow_Closed(object? sender, EventArgs e)
         {
+            _escapeWatcher.Dispose();
             if (_hwndSource != null)
             {
                 _hwndSource = null;
             }
+        }
+
+        private void OnEscapePressed()
+        {
+            _abcCts?.Cancel();
+            _xCts?.Cancel();
+            _stundenCts?.Cancel();
+            _artCts?.Cancel();
         }
 
         private async void LoadSettings()
@@ -419,6 +430,7 @@ namespace CopagoAutomation
             AbcStartButton.IsEnabled = false;
             AbcStopButton.IsEnabled = true;
             AbcLogBox.Clear();
+            _escapeWatcher.Start();
             try
             {
                 var token = _abcCts.Token;
@@ -437,6 +449,7 @@ namespace CopagoAutomation
             }
             finally
             {
+                _escapeWatcher.Stop();
                 AbcStartButton.IsEnabled = true;
                 AbcStopButton.IsEnabled = false;
                 _abcCts.Dispose();
@@ -470,6 +483,7 @@ namespace CopagoAutomation
             XStartButton.IsEnabled = false;
             XStopButton.IsEnabled = true;
             XLogBox.Clear();
+            _escapeWatcher.Start();
             try
             {
                 var token = _xCts.Token;
@@ -488,6 +502,7 @@ namespace CopagoAutomation
             }
             finally
             {
+                _escapeWatcher.Stop();
                 XStartButton.IsEnabled = true;
                 XStopButton.IsEnabled = false;
                 _xCts.Dispose();
@@ -690,6 +705,7 @@ namespace CopagoAutomation
             StundenStartButton.IsEnabled = false;
             StundenStopButton.IsEnabled  = true;
             StundenLogBox.Clear();
+            _escapeWatcher.Start();
             try
             {
                 var token = _stundenCts.Token;
@@ -708,6 +724,7 @@ namespace CopagoAutomation
             }
             finally
             {
+                _escapeWatcher.Stop();
                 StundenStartButton.IsEnabled = true;
                 StundenStopButton.IsEnabled  = false;
                 _stundenCts.Dispose();
@@ -862,6 +879,7 @@ namespace CopagoAutomation
             ArtStartButton.IsEnabled = false;
             ArtStopButton.IsEnabled  = true;
             ArtLogBox.Clear();
+            _escapeWatcher.Start();
             try
             {
                 var token = _artCts.Token;
@@ -880,6 +898,7 @@ namespace CopagoAutomation
             }
             finally
             {
+                _escapeWatcher.Stop();
                 ArtStartButton.IsEnabled = true;
                 ArtStopButton.IsEnabled  = false;
                 _artCts.Dispose();

@@ -90,20 +90,11 @@ namespace CopagoAutomation.Automation
             if (saveDialogPathPoint == null) { logs.Add("Fehler: Kalibrierpunkt 'SaveDialogPath' fehlt."); return logs; }
             var saveDialogFilenamePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "SaveDialogFilename", boundWindow);
             if (saveDialogFilenamePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'SaveDialogFilename' fehlt."); return logs; }
-            var outputClosePoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputClose", boundWindow);
-            if (outputClosePoint == null) { logs.Add("Fehler: Kalibrierpunkt 'OutputClose' fehlt."); return logs; }
-
             var outputExcelExportPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "OutputExcelExport", boundWindow);
-            var confirmOkPoint = _calibrationService.GetPoint(calibrationModeName, calibrationProfileName, "ConfirmOk", boundWindow);
             bool isExcel = request.OutputFormat == OutputFormat.Excel;
             if (isExcel && outputExcelExportPoint == null)
             {
                 logs.Add("Fehler: Kalibrierpunkt 'OutputExcelExport' fehlt (Excel-Modus).");
-                return logs;
-            }
-            if (isExcel && confirmOkPoint == null)
-            {
-                logs.Add("Fehler: Kalibrierpunkt 'ConfirmOk' fehlt (Excel-Modus).");
                 return logs;
             }
             string extension = isExcel ? ".xlsx" : ".pdf";
@@ -226,7 +217,8 @@ namespace CopagoAutomation.Automation
                         if (_windowAutomation.IsValidHandle(outputWindowHandle))
                         {
                             logs.Add("Warte auf Schließen des Report-Output-Fensters...");
-                            _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
+                            if (!_windowAutomation.WaitForWindowClosed(outputWindowHandle, ct: ct))
+                                _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
                         }
                         logs.Add("Report-Output-Fenster geschlossen.");
                         _windowAutomation.TryActivateBoundWindow(boundWindow);

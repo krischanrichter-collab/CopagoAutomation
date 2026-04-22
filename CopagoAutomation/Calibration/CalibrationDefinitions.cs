@@ -11,7 +11,7 @@ namespace CopagoAutomation.Calibration
 
 		// Schritte die nur im Excel-Modus kalibriert werden
 		private static readonly HashSet<string> ExcelOnlyKeys = new(System.StringComparer.OrdinalIgnoreCase)
-			{ "OutputExcelExport", "ConfirmOk" };
+			{ "OutputExcelExport" };
 
 		private static bool IsStepApplicable(string key, OutputFormat format) =>
 			format == OutputFormat.Excel ? !PdfOnlyKeys.Contains(key) : !ExcelOnlyKeys.Contains(key);
@@ -84,23 +84,6 @@ namespace CopagoAutomation.Calibration
 				HotkeyText      = "Strg+Alt+U",
 				InstructionText = "Platziere die Maus mittig auf dem Dateiname-Eingabefeld im Save-Dialog und drücke dann Strg+Alt+U."
 			},
-			new CalibrationStepDefinition
-			{
-				Key             = "OutputClose",
-				Title           = "Speichern-Button (Save-Dialog)",
-				HotkeyDigit     = 8,
-				HotkeyText      = "Strg+Alt+I",
-				InstructionText = "Platziere die Maus mittig auf dem Speichern-Button im Save-Dialog und drücke dann Strg+Alt+I."
-			},
-			new CalibrationStepDefinition
-			{
-				Key             = "ConfirmOk",
-				Title           = "OK-Button (Bestätigungsmeldung, nur Excel-Modus)",
-				HotkeyDigit     = 9,
-				HotkeyText      = "Strg+Alt+O",
-				InstructionText = "Nur für Excel-Modus: Nach dem Speichern erscheint eine Bestätigungsmeldung. Platziere die Maus auf dem OK-Button und drücke dann Strg+Alt+O.",
-				IsRequired      = false
-			}
 		};
 
 		public static readonly IReadOnlyList<CalibrationStepDefinition> XListeSteps = new[]
@@ -186,23 +169,6 @@ namespace CopagoAutomation.Calibration
 				HotkeyText      = "Strg+Alt+O",
 				InstructionText = "Platziere die Maus mittig auf dem Dateiname-Eingabefeld im Save-Dialog und drücke dann Strg+Alt+O."
 			},
-			new CalibrationStepDefinition
-			{
-				Key             = "OutputClose",
-				Title           = "Speichern-Button (Save-Dialog)",
-				HotkeyDigit     = 10,
-				HotkeyText      = "Strg+Alt+P",
-				InstructionText = "Platziere die Maus mittig auf dem Speichern-Button im Save-Dialog und drücke dann Strg+Alt+P."
-			},
-			new CalibrationStepDefinition
-			{
-				Key             = "ConfirmOk",
-				Title           = "OK-Button (Bestätigungsmeldung, nur Excel-Modus)",
-				HotkeyDigit     = 10,
-				HotkeyText      = "Strg+Alt+P",
-				InstructionText = "Nur für Excel-Modus: Nach dem Speichern erscheint eine Bestätigungsmeldung. Platziere die Maus auf dem OK-Button und drücke dann Strg+Alt+P.",
-				IsRequired      = false
-			}
 		};
 
 		public static readonly IReadOnlyList<CalibrationStepDefinition> StundenleistungSteps = new[]
@@ -264,23 +230,6 @@ namespace CopagoAutomation.Calibration
 				HotkeyText      = "Strg+Alt+Z",
 				InstructionText = "Platziere die Maus mittig auf dem Dateiname-Eingabefeld im Save-Dialog und drücke dann Strg+Alt+Z."
 			},
-			new CalibrationStepDefinition
-			{
-				Key             = "OutputClose",
-				Title           = "Speichern-Button (Save-Dialog)",
-				HotkeyDigit     = 7,
-				HotkeyText      = "Strg+Alt+U",
-				InstructionText = "Platziere die Maus mittig auf dem Speichern-Button im Save-Dialog und drücke dann Strg+Alt+U."
-			},
-			new CalibrationStepDefinition
-			{
-				Key             = "ConfirmOk",
-				Title           = "OK-Button (Bestätigungsmeldung, nur Excel-Modus)",
-				HotkeyDigit     = 8,
-				HotkeyText      = "Strg+Alt+I",
-				InstructionText = "Nur für Excel-Modus: Nach dem Speichern erscheint eine Bestätigungsmeldung. Platziere die Maus auf dem OK-Button und drücke dann Strg+Alt+I.",
-				IsRequired      = false
-			}
 		};
 
 		public static readonly IReadOnlyList<CalibrationStepDefinition> ArtikelfrequenzSteps = new[]
@@ -342,23 +291,6 @@ namespace CopagoAutomation.Calibration
 				HotkeyText      = "Strg+Alt+Z",
 				InstructionText = "Platziere die Maus mittig auf dem Dateiname-Eingabefeld im Save-Dialog und drücke dann Strg+Alt+Z."
 			},
-			new CalibrationStepDefinition
-			{
-				Key             = "OutputClose",
-				Title           = "Speichern-Button (Save-Dialog)",
-				HotkeyDigit     = 7,
-				HotkeyText      = "Strg+Alt+U",
-				InstructionText = "Platziere die Maus mittig auf dem Speichern-Button im Save-Dialog und drücke dann Strg+Alt+U."
-			},
-			new CalibrationStepDefinition
-			{
-				Key             = "ConfirmOk",
-				Title           = "OK-Button (Bestätigungsmeldung, nur Excel-Modus)",
-				HotkeyDigit     = 8,
-				HotkeyText      = "Strg+Alt+I",
-				InstructionText = "Nur für Excel-Modus: Nach dem Speichern erscheint eine Bestätigungsmeldung. Platziere die Maus auf dem OK-Button und drücke dann Strg+Alt+I.",
-				IsRequired      = false
-			}
 		};
 
 		public static IReadOnlyList<CalibrationStepDefinition> GetStepsForProfile(string profileName)

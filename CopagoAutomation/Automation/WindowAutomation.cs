@@ -804,6 +804,22 @@ namespace CopagoAutomation.Automation
                 SMTO_ABORTIFHUNG, (uint)testTimeoutMs, out _) != IntPtr.Zero;
         }
 
+        /// <summary>
+        /// Wartet darauf dass das Fenster sich von selbst schließt (ohne aktiv zu schließen).
+        /// Gibt true zurück wenn das Fenster innerhalb des Timeouts verschwunden ist.
+        /// </summary>
+        public bool WaitForWindowClosed(IntPtr hWnd, int timeoutMs = 8000, CancellationToken ct = default)
+        {
+            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (!IsWindow(hWnd)) return true;
+                ct.WaitHandle.WaitOne(200);
+                if (ct.IsCancellationRequested) return !IsWindow(hWnd);
+            }
+            return !IsWindow(hWnd);
+        }
+
 
     }
 }
