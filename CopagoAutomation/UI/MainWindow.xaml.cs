@@ -151,13 +151,26 @@ namespace CopagoAutomation
 
             // ApplyModesToUi();
             // ApplyStorageSettingsToUi();
-            UpdateAbcSaveModeUi();
+            ApplyAbcStorageSettingsToUi();
             ApplyXStorageSettingsToUi();
             UpdateXSaveModeUi();
             ApplyStundenStorageSettingsToUi();
             ApplyArtStorageSettingsToUi();
             RestorePosSelections();
             ApplyOutputFormatToUi();
+        }
+
+        private void ApplyAbcStorageSettingsToUi()
+        {
+            if (_settings == null || AbcSaveModeSemco == null || AbcSaveModeAlt == null || AbcSammelordner == null)
+                return;
+
+            if (_settings.AbcSaveMode == SaveMode.SemcoUpload)
+                AbcSaveModeSemco.IsChecked = true;
+            else
+                AbcSaveModeAlt.IsChecked = true;
+
+            UpdateAbcSaveModeUi();
         }
 
         private void ApplyXStorageSettingsToUi()
@@ -169,8 +182,6 @@ namespace CopagoAutomation
                 XSaveModeSemco.IsChecked = true;
             else
                 XSaveModeAlt.IsChecked = true;
-
-            XSammelordner.Text = _settings.XSammelordnerPath;
 
             UpdateXSaveModeUi();
         }
@@ -270,17 +281,8 @@ namespace CopagoAutomation
 
             bool isSemco = _settings.AbcSaveMode == SaveMode.SemcoUpload;
 
+            AbcSammelordner.Text = isSemco ? "" : _settings.AbcSammelordnerPath;
             AbcSammelordner.IsEnabled = !isSemco;
-            // AbcBrowseButton.IsEnabled = !isSemco;
-
-            if (isSemco)
-            {
-                AbcSammelordner.Text = ""; // Clear path for Semco Upload
-            }
-            else
-            {
-                AbcSammelordner.Text = _settings.AbcSammelordnerPath; // Restore path for Alternativ
-            }
         }
 
         private async void XSaveModeChanged(object sender, RoutedEventArgs e)
@@ -302,33 +304,20 @@ namespace CopagoAutomation
 
             bool isSemco = _settings.XSaveMode == SaveMode.SemcoUpload;
 
+            XSammelordner.Text = isSemco ? "" : _settings.XSammelordnerPath;
             XSammelordner.IsEnabled = !isSemco;
-            // XBrowseButton.IsEnabled = !isSemco;
-
-            if (isSemco)
-            {
-                XSammelordner.Text = ""; // Clear path for Semco Upload
-            }
-            else
-            {
-                XSammelordner.Text = _settings.XSammelordnerPath; // Restore path for Alternativ
-            }
         }
 
-        private async void AbcStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        private void AbcStorageFields_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (_settings == null || AbcSammelordner == null) return;
-
+            if (_settings == null || AbcSammelordner == null || !AbcSammelordner.IsEnabled) return;
             _settings.AbcSammelordnerPath = AbcSammelordner.Text;
-            await SaveSettingsAsync();
         }
 
-        private async void XStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        private void XStorageFields_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (_settings == null || XSammelordner == null) return;
-
+            if (_settings == null || XSammelordner == null || !XSammelordner.IsEnabled) return;
             _settings.XSammelordnerPath = XSammelordner.Text;
-            await SaveSettingsAsync();
         }
 
         private async void AbcBrowseButton_Click(object sender, RoutedEventArgs e)
@@ -634,7 +623,6 @@ namespace CopagoAutomation
             else
                 StundenSaveModeAlt.IsChecked = true;
 
-            StundenSammelordner.Text = _settings.StundenleistungSammelordnerPath;
             UpdateStundenSaveModeUi();
         }
 
@@ -643,15 +631,14 @@ namespace CopagoAutomation
             if (_settings == null || StundenSammelordner == null) return;
 
             bool isSemco = _settings.StundenleistungSaveMode == SaveMode.SemcoUpload;
-            StundenSammelordner.IsEnabled = !isSemco;
             StundenSammelordner.Text = isSemco ? "" : _settings.StundenleistungSammelordnerPath;
+            StundenSammelordner.IsEnabled = !isSemco;
         }
 
-        private async void StundenStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        private void StundenStorageFields_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (_settings == null || StundenSammelordner == null) return;
+            if (_settings == null || StundenSammelordner == null || !StundenSammelordner.IsEnabled) return;
             _settings.StundenleistungSammelordnerPath = StundenSammelordner.Text;
-            await SaveSettingsAsync();
         }
 
         private async void StundenBrowseSammelordner_Click(object sender, RoutedEventArgs e)
@@ -808,7 +795,6 @@ namespace CopagoAutomation
             else
                 ArtSaveModeAlt.IsChecked = true;
 
-            ArtSammelordner.Text = _settings.ArtikelfrequenzSammelordnerPath;
             UpdateArtSaveModeUi();
         }
 
@@ -817,15 +803,14 @@ namespace CopagoAutomation
             if (_settings == null || ArtSammelordner == null) return;
 
             bool isSemco = _settings.ArtikelfrequenzSaveMode == SaveMode.SemcoUpload;
-            ArtSammelordner.IsEnabled = !isSemco;
             ArtSammelordner.Text = isSemco ? "" : _settings.ArtikelfrequenzSammelordnerPath;
+            ArtSammelordner.IsEnabled = !isSemco;
         }
 
-        private async void ArtStorageFields_LostFocus(object sender, RoutedEventArgs e)
+        private void ArtStorageFields_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (_settings == null || ArtSammelordner == null) return;
+            if (_settings == null || ArtSammelordner == null || !ArtSammelordner.IsEnabled) return;
             _settings.ArtikelfrequenzSammelordnerPath = ArtSammelordner.Text;
-            await SaveSettingsAsync();
         }
 
         private async void ArtBrowseSammelordner_Click(object sender, RoutedEventArgs e)
