@@ -120,6 +120,7 @@ namespace CopagoAutomation.Automation
                     ct.ThrowIfCancellationRequested();
                     logs.Add($"POS {currentPos} / Datum {currentDateText} wird verarbeitet");
 
+                    IntPtr outputWindowHandle = IntPtr.Zero;
                     try
                     {
                         if (!EnsureBoundWindowReady(boundWindow, logs))
@@ -158,16 +159,8 @@ namespace CopagoAutomation.Automation
                         ClickPoint(runReportPoint, boundWindow);
                         logs.Add($"Report für POS {currentPos} / {currentDateText} gestartet");
 
-                        if (!WaitForReportReady(boundWindow, logs, out IntPtr outputWindowHandle, ct))
+                        if (!WaitForReportReady(boundWindow, logs, out outputWindowHandle, ct))
                             return logs;
-
-                        _windowAutomation.TryActivateWindow(outputWindowHandle);
-                        Sleep(DefaultActionDelayMs);
-
-                        var windowsBeforeSaveDialog = _windowAutomation.GetVisibleTopLevelWindowHandles();
-                        var saveClickPoint = isExcel ? outputExcelExportPoint! : outputSavePoint;
-                        ClickPoint(saveClickPoint, boundWindow);
-                        logs.Add(isExcel ? $"Excel Export für POS {currentPos} geklickt" : $"Diskette für POS {currentPos} geklickt");
 
                         string dateLabel = date.ToString("dd.MM.yy", CultureInfo.InvariantCulture);
                         string filePath  = _pathResolver.ResolvePath("Artikelfrequenz", currentPos, request.SaveMode, dateLabel, extension);
@@ -177,6 +170,14 @@ namespace CopagoAutomation.Automation
 
                         if (!string.IsNullOrEmpty(fileDir))
                             Directory.CreateDirectory(fileDir);
+
+                        _windowAutomation.TryActivateWindow(outputWindowHandle);
+                        Sleep(DefaultActionDelayMs);
+
+                        var windowsBeforeSaveDialog = _windowAutomation.GetVisibleTopLevelWindowHandles();
+                        var saveClickPoint = isExcel ? outputExcelExportPoint! : outputSavePoint;
+                        ClickPoint(saveClickPoint, boundWindow);
+                        logs.Add(isExcel ? $"Excel Export für POS {currentPos} geklickt" : $"Diskette für POS {currentPos} geklickt");
 
                         if (!WaitForSaveDialog(windowsBeforeSaveDialog, logs, out IntPtr _, ct: ct))
                             return logs;
@@ -231,6 +232,10 @@ namespace CopagoAutomation.Automation
                     catch (Exception ex)
                     {
                         logs.Add($"Fehler bei POS {currentPos} / {currentDateText}: {ex.Message}");
+                        if (outputWindowHandle != IntPtr.Zero && _windowAutomation.IsValidHandle(outputWindowHandle))
+                            _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
+                        _windowAutomation.TryActivateBoundWindow(boundWindow);
+                        Sleep(500);
                     }
                 }
             }
