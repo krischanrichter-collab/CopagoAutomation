@@ -232,29 +232,23 @@ namespace CopagoAutomation.Automation
                         _windowAutomation.TryActivateWindow(saveDialogHandle);
                         Sleep(DefaultActionDelayMs);
 
-                        if (_windowAutomation.SetSaveDialogPath(saveDialogHandle, filePath, out string setPathLog))
-                        {
-                            logs.Add(setPathLog);
-                            Sleep(DefaultActionDelayMs);
-                            _windowAutomation.KeyPress(0x0D);
-                        }
-                        else
-                        {
-                            logs.Add($"WM_SETTEXT fehlgeschlagen ({setPathLog}), Klick-Fallback wird verwendet.");
-                            ClickPoint(saveDialogPathPoint, boundWindow);
-                            Sleep(DefaultActionDelayMs);
-                            _windowAutomation.SelectAll();
-                            Sleep(80);
-                            _windowAutomation.TypeText(fileDir);
-                            Sleep(DefaultActionDelayMs);
-                            _windowAutomation.KeyPress(0x0D);
-                            Sleep(DefaultActionDelayMs);
+                        _windowAutomation.FocusAndTypeSaveDialogPath(saveDialogHandle, filePath, out string setPathLog);
+                        logs.Add(setPathLog);
+                        Sleep(DefaultActionDelayMs);
 
+                        _windowAutomation.KeyPress(0x0D);
+
+                        // Fallback: wenn der Dialog noch offen ist (Pfad nicht akzeptiert),
+                        // Dateinamen-Feld per kalibriertem Klick ansteuern und vollen Pfad tippen.
+                        Sleep(DefaultSaveDialogWaitMs);
+                        if (_windowAutomation.IsValidHandle(saveDialogHandle) && _windowAutomation.IsWindowResponsive(saveDialogHandle, 300))
+                        {
+                            logs.Add("Fallback: Dialog noch offen, klicke Dateiname-Feld und tippe vollen Pfad.");
                             ClickPoint(saveDialogFilenamePoint, boundWindow);
                             Sleep(DefaultActionDelayMs);
                             _windowAutomation.SelectAll();
                             Sleep(80);
-                            _windowAutomation.TypeText(fileName);
+                            _windowAutomation.TypeText(filePath);
                             Sleep(DefaultActionDelayMs);
                             _windowAutomation.KeyPress(0x0D);
                         }
@@ -267,18 +261,30 @@ namespace CopagoAutomation.Automation
                             logs.Add("Warte auf Excel-Bestätigungsmeldung...");
                             if (!WaitForConfirmDialog(windowsBeforeSaveDialog, logs, out IntPtr confirmHandle, ct: ct))
                                 return logs;
-                            _windowAutomation.TryActivateWindow(confirmHandle);
+                            if (!_windowAutomation.DismissDialogAndWait(confirmHandle, ct: ct))
+                                logs.Add("Warnung: Bestätigungsmeldung konnte nicht geschlossen werden.");
+                            else
+                                logs.Add("Bestätigungsmeldung bestätigt.");
                             Sleep(300);
-                            _windowAutomation.KeyPress(0x0D);
-                            logs.Add("Bestätigungsmeldung bestätigt.");
-                            Sleep(800);
                         }
 
                         if (_windowAutomation.IsValidHandle(outputWindowHandle))
                         {
                             logs.Add("Warte auf Schließen des Report-Output-Fensters...");
                             if (!_windowAutomation.WaitForWindowClosed(outputWindowHandle, ct: ct))
+                            {
+                                var remainingDialogs = _windowAutomation.GetVisibleTopLevelWindowHandles();
+                                foreach (var w in remainingDialogs)
+                                {
+                                    if (w != outputWindowHandle && !windowsBeforeSaveDialog.Contains(w))
+                                    {
+                                        logs.Add("Schließe blockierenden Dialog vor Output-Fenster-Schließung.");
+                                        _windowAutomation.DismissDialogAndWait(w, 3000, ct);
+                                        break;
+                                    }
+                                }
                                 _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
+                            }
                         }
                         logs.Add("Report-Output-Fenster geschlossen.");
                         _windowAutomation.TryActivateBoundWindow(boundWindow);

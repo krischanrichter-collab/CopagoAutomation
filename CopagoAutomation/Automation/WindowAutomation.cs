@@ -201,6 +201,7 @@ namespace CopagoAutomation.Automation
 
         private const uint WM_CLOSE  = 0x0010;
         private const uint WM_SETTEXT = 0x000C;
+        private const uint WM_COMMAND = 0x0111;
         private const uint BM_CLICK = 0x00F5;
         private const uint WM_NULL = 0x0000;
         private const uint SMTO_ABORTIFHUNG = 0x0002;
@@ -371,10 +372,11 @@ namespace CopagoAutomation.Automation
         }
 
         /// <summary>
-        /// Setzt den Dateipfad im Dateinamen-Feld des Save-Dialogs direkt via WM_SETTEXT.
-        /// Kein Tastaturfokus erforderlich – funktioniert zuverlässig mit Windows-Systemdialogen.
+        /// Aktiviert den Save-Dialog und tippt den vollständigen Pfad per Tastatureingabe.
+        /// In Windows-Speicherdialogen hat das Dateinamen-Feld standardmäßig den Fokus –
+        /// kein Klick nötig, kein Autocomplete-Resize der Adressleiste.
         /// </summary>
-        public bool SetSaveDialogPath(IntPtr dialogHwnd, string filePath, out string logMessage)
+        public bool FocusAndTypeSaveDialogPath(IntPtr dialogHwnd, string filePath, out string logMessage)
         {
             logMessage = string.Empty;
 
@@ -384,27 +386,45 @@ namespace CopagoAutomation.Automation
                 return false;
             }
 
-            // Dateiname-Textfeld suchen (verschiedene Dialog-Typen)
-            IntPtr fileNameTextBoxHwnd = FindWindowEx(dialogHwnd, IntPtr.Zero, "DUIViewWndClassName", null);
-            if (fileNameTextBoxHwnd == IntPtr.Zero)
-            {
-                fileNameTextBoxHwnd = FindWindowEx(dialogHwnd, IntPtr.Zero, "ComboBoxEx32", null);
-                if (fileNameTextBoxHwnd != IntPtr.Zero)
-                    fileNameTextBoxHwnd = FindWindowEx(fileNameTextBoxHwnd, IntPtr.Zero, "Edit", null);
-            }
-            if (fileNameTextBoxHwnd == IntPtr.Zero)
-                fileNameTextBoxHwnd = FindWindowEx(dialogHwnd, IntPtr.Zero, "Edit", null);
-
-            if (fileNameTextBoxHwnd == IntPtr.Zero)
-            {
-                logMessage = "Dateiname-Textfeld im Save-Dialog nicht gefunden.";
-                return false;
-            }
-
             SetForegroundWindow(dialogHwnd);
-            SendMessage(fileNameTextBoxHwnd, WM_SETTEXT, IntPtr.Zero, filePath);
-            logMessage = $"Speicherpfad gesetzt: {filePath}";
+            Thread.Sleep(200);
+
+            KeyDown(VK_CONTROL);
+            KeyPress(VK_A);
+            KeyUp(VK_CONTROL);
+            Thread.Sleep(80);
+            TypeText(filePath);
+
+            logMessage = $"Speicherpfad eingegeben: {filePath}";
             return true;
+        }
+
+        // Kept for backwards compatibility
+        public bool SetSaveDialogPath(IntPtr dialogHwnd, string filePath, out string logMessage)
+            => FocusAndTypeSaveDialogPath(dialogHwnd, filePath, out logMessage);
+
+        /// <summary>
+        /// Schließt einen Dialog zuverlässig: erst per WM_COMMAND IDOK (kein Fokus nötig),
+        /// dann per Tastatur-Fallback. Wiederholt bis der Dialog geschlossen ist oder Timeout.
+        /// </summary>
+        public bool DismissDialogAndWait(IntPtr dialogHwnd, int timeoutMs = 8000, CancellationToken ct = default)
+        {
+            if (!IsValidHandle(dialogHwnd)) return true;
+
+            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            while (IsValidHandle(dialogHwnd) && DateTime.UtcNow < deadline)
+            {
+                ct.ThrowIfCancellationRequested();
+                PostMessage(dialogHwnd, WM_COMMAND, new IntPtr(1), IntPtr.Zero); // IDOK = 1
+                ct.WaitHandle.WaitOne(300);
+                if (!IsValidHandle(dialogHwnd)) return true;
+
+                TryActivateWindow(dialogHwnd);
+                Thread.Sleep(100);
+                KeyPress(0x0D);
+                ct.WaitHandle.WaitOne(400);
+            }
+            return !IsValidHandle(dialogHwnd);
         }
 
         public bool AutomateSaveDialog(string filePath, string dialogTitlePart, out string logMessage, int waitTimeoutMs = 10000)
