@@ -134,6 +134,7 @@ namespace CopagoAutomation.Automation
                         ? $"POS {currentPos} / {dateFromText} wird verarbeitet"
                         : $"POS {currentPos} / {dateFromText} bis {dateToText} wird verarbeitet");
 
+                    var windowsAtIterationStart = _windowAutomation.GetVisibleTopLevelWindowHandles();
                     IntPtr outputWindowHandle = IntPtr.Zero;
                     try
                     {
@@ -261,34 +262,16 @@ namespace CopagoAutomation.Automation
                             logs.Add("Warte auf Excel-Bestätigungsmeldung...");
                             if (!WaitForConfirmDialog(windowsBeforeSaveDialog, logs, out IntPtr confirmHandle, ct: ct))
                                 return logs;
+                            logs.Add("Warte 2s vor OK-Klick damit Copago stabilisieren kann...");
+                            ct.WaitHandle.WaitOne(2000);
+                            ct.ThrowIfCancellationRequested();
                             if (!_windowAutomation.DismissDialogAndWait(confirmHandle, ct: ct))
                                 logs.Add("Warnung: Bestätigungsmeldung konnte nicht geschlossen werden.");
                             else
                                 logs.Add("Bestätigungsmeldung bestätigt.");
-                            Sleep(300);
                         }
 
-                        if (_windowAutomation.IsValidHandle(outputWindowHandle))
-                        {
-                            logs.Add("Warte auf Schließen des Report-Output-Fensters...");
-                            if (!_windowAutomation.WaitForWindowClosed(outputWindowHandle, ct: ct))
-                            {
-                                var remainingDialogs = _windowAutomation.GetVisibleTopLevelWindowHandles();
-                                foreach (var w in remainingDialogs)
-                                {
-                                    if (w != outputWindowHandle && !windowsBeforeSaveDialog.Contains(w))
-                                    {
-                                        logs.Add("Schließe blockierenden Dialog vor Output-Fenster-Schließung.");
-                                        _windowAutomation.DismissDialogAndWait(w, 5000, ct);
-                                        break;
-                                    }
-                                }
-                                _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
-                            }
-                        }
-                        logs.Add("Report-Output-Fenster geschlossen.");
-                        _windowAutomation.TryActivateBoundWindow(boundWindow);
-                        Sleep(500);
+                        CloseExtraWindowsAndActivateCopago(windowsAtIterationStart, boundWindow, logs, ct);
                     }
                     catch (OperationCanceledException)
                     {
@@ -297,10 +280,7 @@ namespace CopagoAutomation.Automation
                     catch (Exception ex)
                     {
                         logs.Add($"Fehler bei POS {currentPos}: {ex.Message}");
-                        if (outputWindowHandle != IntPtr.Zero && _windowAutomation.IsValidHandle(outputWindowHandle))
-                            _windowAutomation.CloseWindowAndWait(outputWindowHandle, ct: ct);
-                        _windowAutomation.TryActivateBoundWindow(boundWindow);
-                        Sleep(500);
+                        CloseExtraWindowsAndActivateCopago(windowsAtIterationStart, boundWindow, logs, ct);
                     }
                 }
             }
@@ -315,6 +295,55 @@ namespace CopagoAutomation.Automation
                 return request.OccurrenceDates.Select(d => (d.Date, d.Date)).ToList();
 
             return new List<(DateTime, DateTime)> { (request.DateFrom.Date, request.DateTo.Date) };
+        }
+
+        private void CloseExtraWindowsAndActivateCopago(
+            HashSet<IntPtr> windowsAtIterationStart,
+            BoundWindowInfo boundWindow,
+            List<string> logs,
+            CancellationToken ct)
+        {
+            Sleep(600);
+
+            var cleanupDeadline = DateTime.UtcNow.AddSeconds(20);
+            while (DateTime.UtcNow < cleanupDeadline)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var extra = new List<IntPtr>();
+                foreach (var w in _windowAutomation.GetVisibleTopLevelWindowHandles())
+                {
+                    if (!windowsAtIterationStart.Contains(w) && w != boundWindow.Handle)
+                        extra.Add(w);
+                }
+
+                if (extra.Count == 0)
+                    break;
+
+                foreach (var w in extra)
+                {
+                    if (!_windowAutomation.IsValidHandle(w))
+                        continue;
+                    logs.Add($"Schließe verbleibendes Fenster: '{_windowAutomation.GetWindowTitle(w)}'");
+                    _windowAutomation.CloseWindowAndWait(w, 3000, ct);
+                }
+
+                Sleep(400);
+            }
+
+            var responsiveDeadline = DateTime.UtcNow.AddSeconds(30);
+            while (DateTime.UtcNow < responsiveDeadline)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (_windowAutomation.IsWindowResponsive(boundWindow.Handle, 500))
+                    break;
+                logs.Add("Warte auf Copago-Reaktion nach Fenster-Cleanup...");
+                Sleep(1000);
+            }
+
+            _windowAutomation.TryActivateBoundWindow(boundWindow);
+            Sleep(500);
+            logs.Add("Fenster-Cleanup abgeschlossen, Copago reaktiviert.");
         }
 
         private bool WaitForSaveDialog(HashSet<IntPtr> windowsBefore, List<string> logs, out IntPtr dialogHandle, int timeoutMs = 10_000, CancellationToken ct = default)
