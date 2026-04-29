@@ -279,7 +279,7 @@ namespace CopagoAutomation.Automation
                                     if (w != outputWindowHandle && !windowsBeforeSaveDialog.Contains(w))
                                     {
                                         logs.Add("Schließe blockierenden Dialog vor Output-Fenster-Schließung.");
-                                        _windowAutomation.DismissDialogAndWait(w, 3000, ct);
+                                        _windowAutomation.DismissDialogAndWait(w, 5000, ct);
                                         break;
                                     }
                                 }

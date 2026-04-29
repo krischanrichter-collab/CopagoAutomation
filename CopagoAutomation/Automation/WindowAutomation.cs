@@ -415,10 +415,23 @@ namespace CopagoAutomation.Automation
             while (IsValidHandle(dialogHwnd) && DateTime.UtcNow < deadline)
             {
                 ct.ThrowIfCancellationRequested();
-                PostMessage(dialogHwnd, WM_COMMAND, new IntPtr(1), IntPtr.Zero); // IDOK = 1
-                ct.WaitHandle.WaitOne(300);
+
+                // Versuch 1: WM_COMMAND IDOK — Standard-Windows-MessageBox (kein Fokus nötig)
+                PostMessage(dialogHwnd, WM_COMMAND, new IntPtr(1), IntPtr.Zero);
+                ct.WaitHandle.WaitOne(150);
                 if (!IsValidHandle(dialogHwnd)) return true;
 
+                // Versuch 2: BM_CLICK auf den ersten Button-Child — funktioniert für Custom-Dialoge,
+                // "Überschreiben?"-Dialoge und alle anderen Nicht-Standard-Fenster (kein Fokus nötig)
+                IntPtr buttonHwnd = FindWindowEx(dialogHwnd, IntPtr.Zero, "Button", null);
+                if (buttonHwnd != IntPtr.Zero)
+                {
+                    PostMessage(buttonHwnd, BM_CLICK, IntPtr.Zero, IntPtr.Zero);
+                    ct.WaitHandle.WaitOne(150);
+                    if (!IsValidHandle(dialogHwnd)) return true;
+                }
+
+                // Versuch 3: Aktivieren und Enter senden (Fallback wenn obige fehlschlagen)
                 TryActivateWindow(dialogHwnd);
                 Thread.Sleep(100);
                 KeyPress(0x0D);
